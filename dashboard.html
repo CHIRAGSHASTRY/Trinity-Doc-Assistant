@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trinity Assistant - Patient Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<style>
+    .tab-active {
+      border-bottom: 2px solid #3B82F6;
+      color: #3B82F6;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+<div class="min-h-screen flex">
+<!-- Sidebar -->
+<div class="w-16 bg-white shadow-md flex flex-col items-center py-4 border-r">
+<div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg mb-8">DA</div>
+<div class="w-10 h-10 flex items-center justify-center text-gray-500 mb-4">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div class="w-10 h-10 flex items-center justify-center text-gray-500 mb-4">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<!-- Main content -->
+<div class="flex-1 p-6">
+<div class="flex items-center justify-between mb-6">
+<h1 class="text-2xl font-semibold text-gray-800">Trinity Assistant</h1>
+<div class="flex items-center space-x-4">
+<button class="bg-blue-500 text-white px-4 py-2 rounded-lg" id="newPatientBtn">+ New Patient</button>
+<button class="text-gray-600" id="refreshBtn">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<input class="border px-4 py-2 rounded-lg w-80 shadow-sm" id="searchInput" placeholder="Search patients..." type="text"/>
+</div>
+</div>
+<!-- Incoming Patients -->
+<div class="mb-6" id="incomingPatients">
+<h2 class="text-lg font-semibold text-gray-800 mb-4">Incoming Patients</h2>
+<div class="grid grid-cols-3 gap-4">
+<!-- Patient cards will be dynamically inserted here -->
+</div>
+</div>
+<!-- Patient Information -->
+<div class="mb-6" id="patientInfo">
+<h2 class="text-lg font-semibold text-gray-800 mb-4">Patient Information</h2>
+<div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+<svg class="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<p class="text-gray-500">Start typing a patient's name above to view their details...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Patient View -->
+<div class="hidden" id="detailedPatientView">
+<div class="flex border-b mb-4">
+<button class="tab-btn px-4 py-2 text-gray-600 font-semibold tab-active" data-tab="overview">Overview</button>
+<button class="tab-btn px-4 py-2 text-gray-600 font-semibold" data-tab="medical_history">Medical History</button>
+<button class="tab-btn px-4 py-2 text-gray-600 font-semibold" data-tab="medications">Medications</button>
+<button class="tab-btn px-4 py-2 text-gray-600 font-semibold" data-tab="test_results">Test Results</button>
+<button class="tab-btn px-4 py-2 text-gray-600 font-semibold" data-tab="appointments">Appointments</button>
+</div>
+<div class="bg-white shadow-lg rounded-xl p-6" id="tabContent">
+<!-- Tab content will be dynamically inserted here -->
+</div>
+</div>
+</div>
+</div>
+<!-- Calendar Modal -->
+<script>
+    // New CSV data from the second document
+    const csvData = `Patient ID,Name,Date of Birth,Age,Contact,Insurance,Status,Arrival Time,Reason for Visit,Conditions,Allergies,Medications,Blood Pressure,Heart Rate,Temperature,Respiratory Rate,Weight
+    P-20250000,Amy Santiago,1945-11-03,80,414.820.8842x1767,Herrera-Sloan #Ch47131454,Waiting,08:25 AM,Follow-up,Hypertension; High Cholesterol,Peanuts; Penicillin,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",121/83 mmHg,68 bpm,97.4°F,17 bpm,141 lbs
+    P-20250001,Tiffany Harper,1960-03-02,65,649-732-2944,Adams PLC #wL30468444,Arrived,03:53 AM,Back pain,High Cholesterol; Type 2 Diabetes,MRI contraindicated,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",128/79 mmHg,68 bpm,97.2°F,14 bpm,205 lbs
+    P-20250002,Paul Brown,1974-03-10,51,369-741-7666,"Lopez, Murray and Martinez #GE69505789",Waiting,08:56 AM,Follow-up,Hypertension; Asthma; Arthritis,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",113/80 mmHg,90 bpm,99.3°F,20 bpm,131 lbs
+    P-20250003,Danny Le,1963-01-15,62,156.343.9855,"Brown, Shelton and Anderson #xC40843214",Arrived,04:28 AM,Chest pain,Hypertension; Thyroid Disorder,Peanuts; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active)",121/76 mmHg,96 bpm,98.7°F,14 bpm,130 lbs
+    P-20250004,Tammy Warner,1974-10-13,51,878.149.3999x8854,Davis LLC #wL84546913,Arrived,12:53 AM,High fever,High Cholesterol; Asthma; Type 2 Diabetes,Latex,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",110/74 mmHg,100 bpm,97.7°F,19 bpm,219 lbs
+    P-20250005,Donald Decker,1950-09-18,75,556-114-4954x06387,Hester Ltd #EJ12729949,Waiting,08:16 PM,Annual checkup,Thyroid Disorder; Hypertension,Penicillin; Peanuts,"Metformin (500mg, Twice daily, 2023-03-03, Active)",132/83 mmHg,64 bpm,98.7°F,13 bpm,161 lbs
+    P-20250006,Kimberly Madden,1944-03-22,81,854-895-0030x249,Copeland Group #Cp04514898,Waiting,05:42 AM,Chest pain,Type 2 Diabetes,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",133/75 mmHg,62 bpm,98.2°F,15 bpm,201 lbs
+    P-20250007,Jon Moore,1986-06-05,39,001-441-287-6590,Ross-Nicholson #qK63322727,Arrived,08:01 AM,Allergy,Type 2 Diabetes,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",124/75 mmHg,97 bpm,97.2°F,20 bpm,187 lbs
+    P-20250008,William Taylor,1935-04-04,90,001-094-562-6716x18108,Pratt Group #Fs64839555,Waiting,09:38 AM,Flu symptoms,Type 2 Diabetes; Thyroid Disorder,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",110/76 mmHg,96 bpm,97.5°F,12 bpm,206 lbs
+    P-20250009,Brian Hansen,1952-10-15,73,001-667-825-7386x432,Hopkins Inc #TD54068121,Arrived,11:01 PM,Allergy,High Cholesterol; Hypertension,MRI contraindicated; Penicillin,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",121/88 mmHg,60 bpm,98.3°F,20 bpm,208 lbs
+    P-20250010,Eric Fritz,1991-08-13,34,048.317.3960,Matthews-Campbell #GS13830278,Waiting,10:34 AM,High fever,Type 2 Diabetes; Asthma,Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",114/90 mmHg,70 bpm,97.4°F,17 bpm,175 lbs
+    P-20250011,Keith Bishop,2005-04-16,20,627.394.4173x2430,"Wilson, Luna and Hammond #zn77874085",Waiting,09:00 PM,Skin rash,Hypertension; High Cholesterol,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",129/74 mmHg,74 bpm,97.3°F,18 bpm,193 lbs
+    P-20250012,Debra Dunn,1955-10-06,70,335.671.1072,"Lopez, Walters and Wilson #Qc01728690",Arrived,07:50 AM,Allergy,Hypertension,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",132/83 mmHg,79 bpm,97.2°F,12 bpm,218 lbs
+    P-20250013,Marcus Williams,2001-08-06,24,+1-053-294-4740x837,"Taylor, Casey and Thomas #MG40727680",Arrived,01:48 PM,Back pain,Asthma; High Cholesterol,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",123/89 mmHg,84 bpm,97.8°F,19 bpm,214 lbs
+    P-20250014,Isaiah Stanton,1965-02-04,60,(407)961-2627x29700,King Inc #Vg87192193,Urgent,09:37 AM,Chest pain,Arthritis; Type 2 Diabetes; Thyroid Disorder,Peanuts; Latex,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",112/79 mmHg,62 bpm,99.2°F,15 bpm,127 lbs
+    P-20250015,Alex Carroll,2004-05-04,21,798-182-5937x612,Allen-Lopez #lm64727503,Arrived,06:21 PM,Allergy,Arthritis; Type 2 Diabetes; Asthma,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",133/70 mmHg,80 bpm,98.4°F,14 bpm,141 lbs
+    P-20250016,Scott Brown,1965-01-10,60,(830)761-9441x4970,Jordan-Kennedy #Na15322955,Urgent,06:16 AM,Annual checkup,Hypertension; Arthritis; Type 2 Diabetes,Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",128/89 mmHg,84 bpm,98.4°F,13 bpm,214 lbs
+    P-20250017,Elizabeth Noble,1946-09-05,79,+1-459-400-4630x03146,Williams-Humphrey #VR32920520,Urgent,02:36 PM,Allergy,Arthritis; Hypertension; Thyroid Disorder,Peanuts,"Albuterol (90mcg, As needed, 2022-09-10, Active)",123/72 mmHg,76 bpm,98.6°F,15 bpm,145 lbs
+    P-20250018,Austin Henry,1997-12-02,28,(222)087-6550x0131,"Smith, Bell and Willis #ol16823908",Waiting,05:32 AM,Back pain,High Cholesterol,None,"Albuterol (90mcg, As needed, 2022-09-10, Active)",118/87 mmHg,96 bpm,97.8°F,19 bpm,191 lbs
+    P-20250019,Jennifer Cuevas,1960-08-04,65,871.504.1789,"Lawrence, Morton and Fritz #Sf49922606",Arrived,12:05 PM,Skin rash,High Cholesterol,Peanuts; Penicillin,"Albuterol (90mcg, As needed, 2022-09-10, Active)",124/71 mmHg,65 bpm,99.5°F,15 bpm,137 lbs
+    P-20250020,Darrell Ruiz,1944-07-29,81,+1-408-775-3728x1976,"Gray, Harris and Robertson #KC23040874",Waiting,06:02 PM,Follow-up,High Cholesterol; Type 2 Diabetes; Asthma,Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active)",135/85 mmHg,70 bpm,98.7°F,18 bpm,209 lbs
+    P-20250021,Hector Colon,1985-05-05,40,001-171-517-5138x7873,Watkins and Sons #qp55004620,Arrived,04:37 PM,Follow-up,Arthritis; Type 2 Diabetes,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",134/70 mmHg,95 bpm,98.5°F,17 bpm,162 lbs
+    P-20250022,Lori Townsend,1987-01-24,38,831.334.2589x4309,Warren-Potter #Im80857313,Waiting,01:56 PM,High fever,Asthma; Thyroid Disorder,Shellfish; MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",111/84 mmHg,69 bpm,98.8°F,13 bpm,136 lbs
+    P-20250023,David Freeman,1960-10-13,65,597-619-3932x483,"Taylor, Hernandez and Quinn #vu55963286",Urgent,08:45 PM,High fever,Asthma; High Cholesterol; Type 2 Diabetes,Penicillin,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",127/71 mmHg,84 bpm,99.3°F,17 bpm,174 lbs
+    P-20250024,Timothy Camacho,1968-06-13,57,562.619.9000,"Bennett, Durham and Sanchez #HW83642375",Arrived,11:24 AM,High fever,Arthritis,MRI contraindicated; Shellfish,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",138/87 mmHg,92 bpm,99.5°F,20 bpm,125 lbs
+    P-20250025,Jesse Chavez,1935-03-28,90,646.798.2664,Barnes Group #UX02566173,Arrived,10:35 PM,Allergy,High Cholesterol; Thyroid Disorder; Arthritis,Penicillin; MRI contraindicated,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",118/88 mmHg,78 bpm,99.4°F,18 bpm,133 lbs
+    P-20250026,Zoe Shaffer,1977-05-19,48,(210)735-0718,James Inc #wi74132404,Urgent,11:19 AM,Annual checkup,Arthritis; Asthma; Hypertension,Latex,"Albuterol (90mcg, As needed, 2022-09-10, Active)",137/86 mmHg,97 bpm,97.5°F,13 bpm,157 lbs
+    P-20250027,Kelly Davis,1945-07-29,80,(081)915-3527,Price-Bender #zt52212650,Waiting,01:46 PM,Follow-up,Hypertension; Thyroid Disorder,Latex,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",114/90 mmHg,65 bpm,98.0°F,20 bpm,198 lbs
+    P-20250028,Mark Mcdonald,1977-06-27,48,528-108-5036x9681,"Johnson, Hall and Blankenship #Jg56408530",Waiting,04:05 AM,High fever,Hypertension; Arthritis; High Cholesterol,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",111/75 mmHg,98 bpm,97.6°F,20 bpm,207 lbs
+    P-20250029,Susan Weber,1984-10-15,41,067.412.2180x44156,Edwards-Lewis #Tt03630643,Urgent,08:59 AM,Annual checkup,Type 2 Diabetes; Asthma,MRI contraindicated; Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",115/74 mmHg,84 bpm,97.8°F,15 bpm,218 lbs
+    P-20250030,Matthew Caldwell,1979-08-07,46,(052)915-2234x3190,Gilbert-Barajas #BC22041086,Urgent,10:07 AM,Annual checkup,High Cholesterol; Arthritis,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",123/87 mmHg,90 bpm,99.0°F,15 bpm,205 lbs
+    P-20250031,James Pope,1957-11-25,68,438.951.3233x466,Hernandez Group #Fl50138871,Urgent,03:07 AM,Follow-up,Type 2 Diabetes,Shellfish; MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",133/84 mmHg,76 bpm,98.4°F,20 bpm,193 lbs
+    P-20250032,Philip Jones,1991-12-08,34,+1-116-060-7922x11001,Schultz and Sons #aM82625637,Urgent,11:44 PM,Flu symptoms,High Cholesterol; Hypertension,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",110/89 mmHg,73 bpm,98.1°F,18 bpm,154 lbs
+    P-20250033,Jordan Parks,1984-03-28,41,001-122-952-5748x83769,Mata and Sons #vm81223738,Urgent,06:10 AM,Chest pain,Thyroid Disorder; Type 2 Diabetes,Penicillin; Shellfish,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",121/71 mmHg,80 bpm,97.6°F,12 bpm,146 lbs
+    P-20250034,Joshua Yu,1971-03-04,54,900-261-1157x616,Farmer PLC #ox96874660,Waiting,12:06 AM,Flu symptoms,Asthma; Hypertension; Arthritis,Latex; MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",130/87 mmHg,90 bpm,99.4°F,17 bpm,189 lbs
+    P-20250035,Caleb Rogers,1935-05-29,90,584-063-6895x67501,Bryan-Wells #AG96261162,Arrived,02:34 PM,Chest pain,Thyroid Disorder,None,"Albuterol (90mcg, As needed, 2022-09-10, Active)",134/85 mmHg,73 bpm,97.5°F,14 bpm,209 lbs
+    P-20250036,Charles Nunez,1955-04-19,70,625.507.9412x926,Larson-Johnson #hW73688722,Urgent,06:56 PM,Allergy,Arthritis; High Cholesterol,None,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",119/75 mmHg,71 bpm,97.0°F,12 bpm,154 lbs
+    P-20250037,Amanda Anderson,1979-05-23,46,+1-126-807-1756x55395,"Howard, Jones and Hale #Sw83099774",Arrived,12:31 PM,Skin rash,High Cholesterol; Asthma; Type 2 Diabetes,None,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",123/79 mmHg,97 bpm,97.3°F,15 bpm,169 lbs
+    P-20250038,Jordan Wallace,1939-03-01,86,(986)224-6088,"Brown, Hamilton and Mata #Bh10312637",Waiting,05:00 AM,Follow-up,Type 2 Diabetes; Hypertension,Shellfish; Penicillin,"Metformin (500mg, Twice daily, 2023-03-03, Active)",110/77 mmHg,88 bpm,99.5°F,16 bpm,133 lbs
+    P-20250039,Michael Delacruz,1943-01-25,82,+1-410-390-7734x499,Johnson Ltd #nx66529706,Waiting,03:20 AM,Follow-up,Thyroid Disorder; Hypertension,Penicillin,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",115/85 mmHg,70 bpm,98.1°F,14 bpm,121 lbs
+    P-20250040,Kristen Carter,1997-11-23,28,(667)869-1558x1935,"Evans, Taylor and Morgan #sn46016829",Waiting,01:15 AM,Skin rash,Arthritis; Type 2 Diabetes,None,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",128/74 mmHg,82 bpm,99.3°F,17 bpm,142 lbs
+    P-20250041,Jessica Snyder,1982-12-14,43,383.176.6301x02687,Johnson Group #Wa47451595,Arrived,05:31 AM,Allergy,Arthritis,Shellfish; Peanuts,"Albuterol (90mcg, As needed, 2022-09-10, Active)",128/70 mmHg,83 bpm,97.6°F,19 bpm,135 lbs
+    P-20250042,Charles Robinson,1958-12-13,67,492-845-7941x125,Nguyen-Williams #ah50535841,Waiting,08:19 AM,Skin rash,High Cholesterol,Penicillin; Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",137/82 mmHg,66 bpm,98.9°F,13 bpm,166 lbs
+    P-20250043,Kelly Matthews,1988-06-09,37,+1-312-657-1412x43704,"Foley, Ball and Jackson #bn41481694",Waiting,12:59 PM,Flu symptoms,High Cholesterol; Hypertension,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",112/83 mmHg,87 bpm,98.1°F,17 bpm,219 lbs
+    P-20250044,Diane Miller,1983-11-06,42,001-664-529-1297x68402,Hunter Inc #jl86697746,Arrived,12:55 AM,Allergy,Hypertension,None,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",126/90 mmHg,71 bpm,99.0°F,18 bpm,154 lbs
+    P-20250045,Elizabeth Chang,1971-11-06,54,147.442.8907x99893,"Oliver, Gonzalez and Kim #Qm28138564",Arrived,10:39 AM,Annual checkup,Asthma; High Cholesterol; Arthritis,Shellfish,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",128/82 mmHg,94 bpm,99.5°F,13 bpm,127 lbs
+    P-20250046,Robert Johnston,1947-08-04,78,001-146-322-8673x85675,Torres-Dawson #JT70837973,Waiting,02:10 PM,Back pain,Hypertension; Type 2 Diabetes,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",119/77 mmHg,76 bpm,98.6°F,15 bpm,160 lbs
+    P-20250047,William White,1993-09-25,32,001-853-567-6737x571,"Simpson, Hernandez and Brown #ZF41157022",Waiting,12:19 AM,Allergy,High Cholesterol,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active)",132/76 mmHg,60 bpm,98.2°F,20 bpm,171 lbs
+    P-20250048,Larry Ramirez,1979-08-21,46,(802)063-5509,Jones LLC #gX84154987,Arrived,10:57 PM,Skin rash,High Cholesterol; Asthma; Hypertension,Latex,"Metformin (500mg, Twice daily, 2023-03-03, Active)",116/87 mmHg,82 bpm,97.8°F,17 bpm,181 lbs
+    P-20250049,David Mendoza,2003-03-15,22,+1-851-945-5090x71618,"James, Dawson and Gomez #MD31193341",Arrived,06:53 PM,Skin rash,Asthma; High Cholesterol; Arthritis,Penicillin; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",121/75 mmHg,79 bpm,97.1°F,20 bpm,131 lbs
+    P-20250050,Steven Garcia,1997-02-06,28,133.230.0392x88060,Davis-Barnett #HU75908606,Waiting,06:59 AM,Chest pain,Thyroid Disorder; High Cholesterol,Latex,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",128/85 mmHg,77 bpm,99.0°F,18 bpm,131 lbs
+    P-20250051,Meghan Bennett,1990-02-19,35,001-514-660-8040x00711,King-Perez #nt44043751,Urgent,02:48 PM,Skin rash,High Cholesterol; Hypertension; Type 2 Diabetes,Peanuts,"Metformin (500mg, Twice daily, 2023-03-03, Active)",122/80 mmHg,83 bpm,97.1°F,15 bpm,186 lbs
+    P-20250052,Mark Rojas,1990-01-31,35,+1-948-236-4721x062,Smith Group #jY56877432,Waiting,10:55 PM,Flu symptoms,High Cholesterol,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",138/79 mmHg,78 bpm,99.4°F,15 bpm,169 lbs
+    P-20250053,Rodney Clements,2003-08-16,22,681-858-1414x42315,West Inc #si55929971,Urgent,02:44 AM,High fever,Hypertension,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",128/88 mmHg,89 bpm,97.1°F,13 bpm,200 lbs
+    P-20250054,Lisa Hernandez,2005-05-04,20,678.777.9306,Booth-Ellis #Xf38201119,Waiting,01:55 AM,High fever,High Cholesterol,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",113/78 mmHg,81 bpm,98.0°F,16 bpm,197 lbs
+    P-20250055,James Smith,1990-10-26,35,(797)238-0471x23074,Rodriguez-Le #bV37022178,Waiting,09:14 PM,Chest pain,Arthritis; Type 2 Diabetes; High Cholesterol,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",140/80 mmHg,71 bpm,97.2°F,18 bpm,200 lbs
+    P-20250056,Angela Thomas,1971-05-21,54,611-749-4688,Rogers and Sons #jG51914423,Arrived,06:14 PM,Back pain,Arthritis; Type 2 Diabetes,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active)",126/83 mmHg,62 bpm,98.0°F,18 bpm,151 lbs
+    P-20250057,Jason Day,1988-06-25,37,262-886-8075x34020,"Ramirez, Howard and Ortiz #jT17591477",Arrived,11:50 AM,Skin rash,Thyroid Disorder,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active)",120/90 mmHg,100 bpm,97.9°F,12 bpm,146 lbs
+    P-20250058,Mark Williamson,1992-12-05,33,142.516.7999x46220,"Pope, Gray and Ryan #Tu53831023",Waiting,10:42 AM,Chest pain,Type 2 Diabetes,Penicillin; Shellfish,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",130/74 mmHg,73 bpm,98.6°F,16 bpm,122 lbs
+    P-20250059,Rebecca Sullivan,1973-05-01,52,309.285.0627x95075,"Martin, Rojas and Stafford #Us00752391",Urgent,09:07 PM,High fever,Type 2 Diabetes,Penicillin; Peanuts,"Albuterol (90mcg, As needed, 2022-09-10, Active)",126/78 mmHg,75 bpm,97.5°F,17 bpm,162 lbs
+    P-20250060,Destiny Wong,1990-07-26,35,527-269-4896x50693,"Jacobs, May and Costa #TI48741822",Arrived,07:35 PM,Allergy,High Cholesterol,None,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",110/78 mmHg,91 bpm,99.5°F,12 bpm,218 lbs
+    P-20250061,Donna Ramos,1940-12-09,85,468-775-0299,Simon-Deleon #Pg00016852,Urgent,03:55 AM,Skin rash,Type 2 Diabetes; Thyroid Disorder; Hypertension,Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",131/76 mmHg,62 bpm,98.3°F,20 bpm,181 lbs
+    P-20250062,Amber Pearson,1941-04-24,84,(257)751-1749,Rivera-Rivas #mI75285261,Waiting,10:08 AM,Follow-up,Thyroid Disorder,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",122/77 mmHg,61 bpm,99.0°F,18 bpm,128 lbs
+    P-20250063,Catherine Kent,1964-09-11,61,(085)511-5912x19319,Perkins-Turner #gg41736243,Waiting,12:43 PM,Flu symptoms,Hypertension; Arthritis,Latex; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",112/83 mmHg,95 bpm,99.0°F,17 bpm,212 lbs
+    P-20250064,Kristen White,1955-10-29,70,(581)812-1218x784,Contreras-Scott #Tu80631491,Arrived,02:00 AM,Flu symptoms,Hypertension; Arthritis; Type 2 Diabetes,Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",138/90 mmHg,66 bpm,98.0°F,13 bpm,193 lbs
+    P-20250065,Kevin Schroeder DDS,1987-08-12,38,209.484.2237x6281,Cline and Sons #EC79252998,Waiting,08:26 AM,Chest pain,Hypertension; Thyroid Disorder,Latex,"Metformin (500mg, Twice daily, 2023-03-03, Active)",137/73 mmHg,68 bpm,97.5°F,16 bpm,194 lbs
+    P-20250066,Brianna Roth,1949-05-24,76,(467)762-3742x5058,"Mitchell, Brewer and Thomas #MS43592397",Urgent,11:37 AM,Annual checkup,Arthritis; Hypertension,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",133/72 mmHg,67 bpm,98.9°F,13 bpm,180 lbs
+    P-20250067,Jose Welch,1987-02-14,38,1786106611,Lester-Bender #Hv90414996,Arrived,09:34 AM,Skin rash,Arthritis,None,"Metformin (500mg, Twice daily, 2023-03-03, Active)",112/88 mmHg,98 bpm,97.3°F,18 bpm,162 lbs
+    P-20250068,Joseph Harris,1978-04-04,47,+1-856-976-6757x388,"Rice, Miller and Meyer #yd71117494",Urgent,04:29 PM,Allergy,Arthritis,Shellfish; MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active)",119/72 mmHg,71 bpm,97.6°F,19 bpm,198 lbs
+    P-20250069,Angela Scott,1936-02-16,89,+1-606-745-7782,"Adams, Ross and Kennedy #pn59836123",Waiting,02:29 PM,High fever,Arthritis; Hypertension; Type 2 Diabetes,Peanuts; MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",136/83 mmHg,71 bpm,98.0°F,15 bpm,176 lbs
+    P-20250070,Manuel Nolan,1979-10-17,46,265-158-3255x19597,"Harris, Yates and Lee #OS77396518",Arrived,01:22 PM,Flu symptoms,High Cholesterol; Asthma,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",118/73 mmHg,93 bpm,97.0°F,20 bpm,122 lbs
+    P-20250071,Amy Graham,1971-06-30,54,(898)740-7807x441,Arnold and Sons #GH89187368,Urgent,04:08 AM,High fever,Hypertension; Asthma,MRI contraindicated; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active)",133/73 mmHg,83 bpm,99.0°F,17 bpm,156 lbs
+    P-20250072,Eugene Gibson,1978-06-28,47,545.270.9815x436,Lawson-Harris #Ug62937298,Arrived,07:41 PM,Flu symptoms,High Cholesterol; Asthma,Latex,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",111/75 mmHg,65 bpm,97.3°F,20 bpm,187 lbs
+    P-20250073,Jessica Edwards,1962-06-12,63,128-342-7650,Jimenez-Williams #nY44700442,Arrived,01:44 AM,Annual checkup,Arthritis,Latex; Shellfish,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",122/77 mmHg,70 bpm,98.7°F,18 bpm,193 lbs
+    P-20250074,Dawn Smith,1977-07-09,48,8976280587,Rodriguez Group #MR10407116,Urgent,03:49 PM,Allergy,Arthritis; Type 2 Diabetes; Asthma,Peanuts; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active)",123/81 mmHg,98 bpm,97.9°F,18 bpm,160 lbs
+    P-20250075,Katie Gates,1964-08-25,61,7900846663,George-Howard #hT83228999,Waiting,12:52 AM,Follow-up,Hypertension,Penicillin; Shellfish,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",140/75 mmHg,77 bpm,97.9°F,12 bpm,149 lbs
+    P-20250076,Michael Cantu,1968-04-01,57,(885)538-9496,Moyer Ltd #Ow32942262,Urgent,01:27 PM,Chest pain,Hypertension; Arthritis; Thyroid Disorder,Penicillin,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",134/78 mmHg,61 bpm,98.9°F,18 bpm,171 lbs
+    P-20250077,Charles Owen,1974-09-02,51,319.656.5119,Nelson PLC #RN81178056,Arrived,02:36 AM,High fever,Hypertension,Latex,"Metformin (500mg, Twice daily, 2023-03-03, Active)",131/85 mmHg,79 bpm,99.2°F,17 bpm,202 lbs
+    P-20250078,Savannah Ramirez,1952-10-14,73,001-834-254-4378x5041,Lee-Clark #qF47237364,Waiting,02:50 AM,Skin rash,Thyroid Disorder,Latex; Penicillin,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",124/90 mmHg,96 bpm,98.6°F,18 bpm,178 lbs
+    P-20250079,Annette Herman,1946-10-29,79,000.719.4990x5753,Wright Group #kG64466907,Arrived,06:10 PM,High fever,Thyroid Disorder; Type 2 Diabetes; Asthma,Penicillin; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active)",133/90 mmHg,71 bpm,98.8°F,13 bpm,184 lbs
+    P-20250080,Mr. Brian Edwards,1970-06-29,55,001-616-516-5567,"Duffy, Price and Lynn #CO48750940",Waiting,11:31 AM,Allergy,Arthritis; Type 2 Diabetes,Peanuts; Penicillin,"Albuterol (90mcg, As needed, 2022-09-10, Active)",115/81 mmHg,81 bpm,98.3°F,17 bpm,218 lbs
+    P-20250081,Suzanne Chavez,1944-05-25,81,+1-917-490-3022,Hale and Sons #DP46516675,Arrived,09:58 PM,Skin rash,Type 2 Diabetes,Penicillin; MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active)",135/89 mmHg,86 bpm,98.1°F,19 bpm,137 lbs
+    P-20250082,Ashley Pearson,1964-10-25,61,667.650.3108x85810,Rodriguez Ltd #PS75320693,Arrived,05:06 AM,High fever,High Cholesterol; Hypertension; Asthma,MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",115/86 mmHg,91 bpm,98.7°F,19 bpm,214 lbs
+    P-20250083,Mindy Camacho,1985-01-02,40,242.644.7099,"Brown, Johnson and Ward #ec96738598",Waiting,01:37 PM,Back pain,Asthma; High Cholesterol,Latex,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",136/82 mmHg,67 bpm,98.6°F,15 bpm,217 lbs
+    P-20250084,Phillip Valenzuela,1975-05-08,50,001-755-527-7623,Mitchell-Bradley #qk14774611,Urgent,06:38 AM,Follow-up,Hypertension; Type 2 Diabetes,Shellfish; Peanuts,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)",112/90 mmHg,84 bpm,97.5°F,17 bpm,162 lbs
+    P-20250085,Chad Cabrera,1976-11-17,49,+1-554-955-5702x63198,Sanchez PLC #jp10034199,Waiting,11:22 AM,Allergy,Type 2 Diabetes; Asthma; Thyroid Disorder,Peanuts; Penicillin,"Metformin (500mg, Twice daily, 2023-03-03, Active)",114/85 mmHg,69 bpm,99.0°F,17 bpm,198 lbs
+    P-20250086,Aaron Martinez,1942-06-14,83,210.117.3234,"Mack, Guerrero and Simmons #uI75851754",Urgent,03:46 PM,Chest pain,Arthritis; Hypertension; High Cholesterol,Shellfish,"Lisinopril (10mg, Once daily, 2023-01-15, Active)",138/74 mmHg,86 bpm,98.6°F,18 bpm,175 lbs
+    P-20250087,Jonathan Rich,1982-12-26,43,(269)797-7439,Avery Inc #jS49684241,Waiting,03:29 AM,Follow-up,Thyroid Disorder; Hypertension,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",118/86 mmHg,91 bpm,98.2°F,17 bpm,130 lbs
+    P-20250088,Susan Howell,1989-02-28,36,001-096-851-4529x5933,"Lopez, Malone and Bell #OM40267504",Waiting,05:51 AM,Flu symptoms,Type 2 Diabetes; Asthma,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",120/86 mmHg,79 bpm,97.9°F,17 bpm,183 lbs
+    P-20250089,Hannah Rios,2002-09-13,23,496.357.5681x1211,Barrett Group #bv51601548,Urgent,04:41 PM,Allergy,High Cholesterol; Arthritis; Type 2 Diabetes,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",140/90 mmHg,76 bpm,99.1°F,13 bpm,140 lbs
+    P-20250090,Michael Davis,1978-11-01,47,426-927-9009x2153,"Vazquez, Jefferson and Foster #RN87517582",Urgent,01:47 AM,Flu symptoms,Thyroid Disorder; High Cholesterol,None,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",127/87 mmHg,61 bpm,98.8°F,14 bpm,199 lbs
+    P-20250091,Jeremiah Weeks,2006-09-04,19,001-330-275-5951x71738,"Costa, Hawkins and Cooper #ST01165716",Arrived,04:51 PM,Follow-up,Thyroid Disorder; Type 2 Diabetes,MRI contraindicated,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",130/78 mmHg,62 bpm,97.6°F,15 bpm,162 lbs
+    P-20250092,Michael Taylor,1987-03-05,38,936.525.2929x41526,"Fisher, Small and Lucas #bt79048347",Urgent,02:51 AM,Allergy,Type 2 Diabetes; Arthritis,MRI contraindicated; Latex,"Albuterol (90mcg, As needed, 2022-09-10, Active)",112/86 mmHg,82 bpm,97.7°F,14 bpm,147 lbs
+    P-20250093,Patricia Grimes,1982-01-02,43,+1-051-681-4429x092,"Page, Howard and Martin #sg27414029",Urgent,07:26 PM,Annual checkup,Asthma; High Cholesterol; Type 2 Diabetes,Latex; Shellfish,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",116/73 mmHg,86 bpm,98.2°F,18 bpm,165 lbs
+    P-20250094,Jennifer Graham,1949-05-27,76,992.818.2943,Weber LLC #Ff52889691,Arrived,09:39 PM,Annual checkup,Arthritis; Thyroid Disorder; Hypertension,Peanuts; Shellfish,"Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",122/70 mmHg,95 bpm,97.1°F,19 bpm,193 lbs
+    P-20250095,David Good,1984-12-13,41,215.126.1612,Hogan-Stephens #Pf82837750,Urgent,08:08 PM,Annual checkup,Type 2 Diabetes,Latex; Peanuts,"Metformin (500mg, Twice daily, 2023-03-03, Active)",129/89 mmHg,99 bpm,98.1°F,18 bpm,182 lbs
+    P-20250096,Jim Bradley,1976-12-02,49,(161)759-9957,Thompson LLC #BV68910911,Waiting,07:23 AM,Annual checkup,Thyroid Disorder; Asthma; Hypertension,MRI contraindicated,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",138/83 mmHg,99 bpm,98.2°F,12 bpm,129 lbs
+    P-20250097,Allen Mcknight,1981-03-29,44,656-835-4147,"Vasquez, Hernandez and Reyes #hb06289763",Urgent,12:14 AM,Flu symptoms,Asthma,Peanuts,"Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)",139/88 mmHg,61 bpm,97.8°F,15 bpm,132 lbs
+    P-20250098,Kathryn Hanson,1961-06-22,64,+1-096-503-2822x2419,"Cook, Watson and Stewart #dA35436231",Waiting,01:27 PM,Flu symptoms,Arthritis; Thyroid Disorder,Peanuts,"Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",110/70 mmHg,74 bpm,98.0°F,15 bpm,203 lbs
+    P-20250099,Tonya Smith,1956-02-28,69,001-101-461-8283x96298,Anderson Inc #TP92569755,Arrived,06:02 PM,Back pain,Arthritis,None,"Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)",133/77 mmHg,85 bpm,97.9°F,20 bpm,216 lbs`;
+
+    function parseCSVData() {
+      const rows = csvData.trim().split('\n');
+      const headers = rows[0].split(',');
+
+      const parsedPatients = rows.slice(1).map(row => {
+        const values = row.split(',');
+        const patient = {};
+
+        headers.forEach((header, index) => {
+          patient[header] = values[index];
+        });
+
+        // Split multi-value fields
+        patient.Conditions = patient.Conditions.split('; ');
+        patient.Allergies = patient.Allergies ? patient.Allergies.split('; ') : [];
+        patient.Medications = patient.Medications ? patient.Medications.split('; ') : [];
+
+        return patient;
+      });
+
+      return parsedPatients;
+    }
+
+    // Populate patients array
+    const allPatients = parseCSVData();
+
+    // Mock incoming patients (subset from new dataset)
+    const incomingPatients = [
+      { name: "Amy Santiago", arrival: "08:25 AM", reason: "Follow-up", status: "Waiting", statusColor: "yellow" },
+      { name: "Isaiah Stanton", arrival: "09:37 AM", reason: "Chest pain", status: "Urgent", statusColor: "red" },
+      { name: "Paul Brown", arrival: "08:56 AM", reason: "Follow-up", status: "Waiting", statusColor: "yellow" }
+    ];
+
+    // Function to create incoming patient card
+    function createIncomingPatientCard(patient) {
+      const borderColor = patient.statusColor === "yellow" ? "border-yellow-400" : patient.statusColor === "red" ? "border-red-400" : "border-green-400";
+      const statusBgColor = patient.statusColor === "yellow" ? "bg-yellow-100" : patient.statusColor === "red" ? "bg-red-100" : "bg-green-100";
+      const statusTextColor = patient.statusColor === "yellow" ? "text-yellow-600" : patient.statusColor === "red" ? "text-red-600" : "text-green-600";
+
+      return `
+        <div class="bg-white shadow-lg rounded-xl p-4 border-l-4 ${borderColor}">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-semibold text-gray-800">${patient.name}</h3>
+            <span class="text-sm ${statusBgColor} ${statusTextColor} px-2 py-1 rounded-full">${patient.status}</span>
+          </div>
+          <div class="flex items-center space-x-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-gray-600">Arrival: ${patient.arrival}</p>
+          </div>
+          <div class="flex items-center space-x-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <p class="text-sm text-gray-600">Reason: ${patient.reason}</p>
+          </div>
+          <div class="flex space-x-2">
+            <button class="check-in-btn border border-gray-300 text-gray-600 px-4 py-1 rounded-lg" data-name="${patient.name}">Check In</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Function to create patient info card with vitals
+    function createPatientInfoCard(patient) {
+      return `
+        <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-800">${patient.Name}</h3>
+              <p class="text-sm text-gray-600">Patient ID: ${patient["Patient ID"]}</p>
+              <p class="text-sm text-gray-600">Contact: ${patient.Contact}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-600">Date of Birth: ${patient["Date of Birth"]} (${patient.Age} years)</p>
+            <p class="text-sm text-gray-600">Insurance: ${patient.Insurance}</p>
+            <p class="text-sm text-gray-600">Vitals: BP: ${patient["Blood Pressure"]}, HR: ${patient["Heart Rate"]}</p>
+          </div>
+          <div class="flex space-x-2">
+          </div>
+        </div>
+      `;
+    }
+
+    // Function to create overview tab content with full vitals
+    function createOverviewTab(patient) {
+      return `
+        <div class="grid grid-cols-3 gap-6">
+          <div>
+            <h3 class="font-semibold text-lg mb-3 text-gray-800">Latest Vitals</h3>
+            <ul class="space-y-2 text-sm">
+              <li><strong>Blood Pressure:</strong> ${patient["Blood Pressure"]}</li>
+              <li><strong>Heart Rate:</strong> ${patient["Heart Rate"]}</li>
+              <li><strong>Temperature:</strong> ${patient.Temperature}</li>
+              <li><strong>Respiratory Rate:</strong> ${patient["Respiratory Rate"]}</li>
+              <li><strong>Weight:</strong> ${patient.Weight}</li>
+            </ul>
+            <button class="text-blue-500 text-sm mt-2">View History</button>
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg mb-3 text-gray-800">Medical Conditions</h3>
+            <ul class="space-y-2 text-sm">
+              ${patient.Conditions.map(condition => `<li class="flex items-center"><span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>${condition}</li>`).join('')}
+            </ul>
+            <button class="text-blue-500 text-sm mt-2">+ Add condition</button>
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg mb-3 text-gray-800">Allergies & Alerts</h3>
+            <ul class="space-y-2 text-sm">
+              ${patient.Allergies.length > 0 ? patient.Allergies.map(allergy => `<li class="text-gray-600">${allergy}</li>`).join('') : '<li class="text-gray-600">No known allergies</li>'}
+            </ul>
+            <button class="text-blue-500 text-sm mt-2">+ Add allergy</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Function to create medical history tab content
+    function createMedicalHistoryTab(patient) {
+      return `
+        <div>
+          <h3 class="font-semibold text-lg mb-3 text-gray-800">Medical History</h3>
+          <ul class="space-y-2 text-sm">
+            <li><strong>Conditions:</strong> ${patient.Conditions.join(', ')}</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    // Function to create medications tab content
+    function createMedicationsTab(patient) {
+      return `
+        <div>
+          <h3 class="font-semibold text-lg mb-3 text-gray-800">Current Medications</h3>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-gray-600 border-b">
+                <th class="text-left py-2">Medication</th>
+                <th class="text-left py-2">Dosage</th>
+                <th class="text-left py-2">Frequency</th>
+                <th class="text-left py-2">Start Date</th>
+                <th class="text-left py-2">Status</th>
+                <th class="text-left py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${patient.Medications.map(med => {
+                const [name, details] = med.split(' (');
+                const [dosage, frequency, startDate, status] = details.slice(0, -1).split(', ');
+                return `
+                  <tr class="border-b">
+                    <td class="py-2">${name}</td>
+                    <td class="py-2">${dosage}</td>
+                    <td class="py-2">${frequency}</td>
+                    <td class="py-2">${startDate}</td>
+                    <td class="py-2"><span class="bg-green-100 text-green-600 px-2 py-1 rounded-full">${status}</span></td>
+                    <td class="py-2">
+                      <button class="text-blue-500 mr-2">Refill</button>
+                      <button class="text-red-500">Stop</button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // Function to create test results tab content (limited data available)
+    function createTestResultsTab(patient) {
+      return `
+        <div>
+          <h3 class="font-semibold text-lg mb-3 text-gray-800">Recent Lab Results</h3>
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-2">Vitals Snapshot</h4>
+              <ul class="space-y-2 text-sm">
+                <li><strong>Blood Pressure:</strong> ${patient["Blood Pressure"]}</li>
+                <li><strong>Heart Rate:</strong> ${patient["Heart Rate"]}</li>
+              </ul>
+              <button class="text-blue-500 text-sm mt-2">View Full Report</button>
+            </div>
+          </div>
+          <button class="text-blue-500 text-sm mt-4">View All</button>
+        </div>
+      `;
+    }
+
+    // Function to create appointments tab content
+    function createAppointmentsTab(patient) {
+      return `
+        <div>
+          <h3 class="font-semibold text-lg mb-3 text-gray-800">Visits & Appointments</h3>
+          <ul class="space-y-2 text-sm">
+            <li><strong>Arrival Time:</strong> ${patient["Arrival Time"]}</li>
+            <li><strong>Reason for Visit:</strong> ${patient["Reason for Visit"]}</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    // Function to speak the patient's name
+    function speakPatientName(name) {
+      const utterance = new SpeechSynthesisUtterance(`Patient ${name}, please proceed for check-in.`);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Initialize incoming patients
+    $('#incomingPatients .grid').html(incomingPatients.map(createIncomingPatientCard).join(''));
+
+    // Search functionality
+    $('#searchInput').on('input', function () {
+      const query = $(this).val().toLowerCase();
+      const matches = allPatients.filter(p => p.Name.toLowerCase().includes(query));
+
+      if (matches.length > 0) {
+        const patient = matches[0]; // Show the first match
+        $('#patientInfo').html(createPatientInfoCard(patient));
+        $('#detailedPatientView').removeClass('hidden');
+        $('#tabContent').html(createOverviewTab(patient)); // Default to Overview tab
+      } else {
+        $('#patientInfo').html(`
+          <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-gray-500">No patients found matching your search.</p>
+              </div>
+            </div>
+          </div>
+        `);
+        $('#detailedPatientView').addClass('hidden');
+      }
+    });
+
+    // Tab switching
+    $('.tab-btn').on('click', function () {
+      $('.tab-btn').removeClass('tab-active');
+      $(this).addClass('tab-active');
+
+      const tab = $(this).data('tab');
+      const query = $('#searchInput').val().toLowerCase();
+      const matches = allPatients.filter(p => p.Name.toLowerCase().includes(query));
+
+      if (matches.length > 0) {
+        const patient = matches[0];
+        if (tab === 'overview') {
+          $('#tabContent').html(createOverviewTab(patient));
+        } else if (tab === 'medical_history') {
+          $('#tabContent').html(createMedicalHistoryTab(patient));
+        } else if (tab === 'medications') {
+          $('#tabContent').html(createMedicationsTab(patient));
+        } else if (tab === 'test_results') {
+          $('#tabContent').html(createTestResultsTab(patient));
+        } else if (tab === 'appointments') {
+          $('#tabContent').html(createAppointmentsTab(patient));
+        }
+      }
+    });
+
+    // Check-in button functionality
+    $(document).on('click', '.check-in-btn', function () {
+      const patientName = $(this).data('name');
+
+      $(this).replaceWith(`
+        <div class="text-green-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      `);
+
+      speakPatientName(patientName);
+    });
+    function createNewPatientForm() {
+        return `
+            <div id="newPatientModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+                <div class="bg-white rounded-xl p-4 w-full max-w-lg h-[80vh] flex flex-col">
+                    <h2 class="text-lg font-semibold mb-2">Add New Patient</h2>
+                    <div class="flex border-b mb-2">
+                        <button class="tab-btn px-3 py-1 text-sm text-gray-600 font-medium tab-active" data-tab="basic">Basic</button>
+                        <button class="tab-btn px-3 py-1 text-sm text-gray-600 font-medium" data-tab="medical">Medical</button>
+                        <button class="tab-btn px-3 py-1 text-sm text-gray-600 font-medium" data-tab="vitals">Vitals</button>
+                    </div>
+                    <form id="newPatientForm" class="flex-1 overflow-y-auto p-2">
+                        <div id="basicTab" class="tab-content">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Name*</label>
+                                    <input type="text" name="Name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">DOB*</label>
+                                    <input type="date" name="Date of Birth" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Age*</label>
+                                    <input type="number" name="Age" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Contact*</label>
+                                    <input type="text" name="Contact" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Insurance*</label>
+                                    <input type="text" name="Insurance" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Status*</label>
+                                    <select name="Status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                        <option value="Waiting">Waiting</option>
+                                        <option value="Arrived">Arrived</option>
+                                        <option value="Urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Arrival*</label>
+                                    <input type="time" name="Arrival Time" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Reason*</label>
+                                    <input type="text" name="Reason for Visit" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="medicalTab" class="tab-content hidden">
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Conditions (; separated)</label>
+                                    <input type="text" name="Conditions" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., Hypertension; Diabetes">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Allergies (; separated)</label>
+                                    <input type="text" name="Allergies" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., Peanuts; Penicillin">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Medications</label>
+                                    <textarea name="Medications" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" rows="3" placeholder="e.g., Metformin (500mg, Twice daily, 2023-03-03, Active); ..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="vitalsTab" class="tab-content hidden">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">BP</label>
+                                    <input type="text" name="Blood Pressure" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., 120/80 mmHg">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">HR</label>
+                                    <input type="text" name="Heart Rate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., 70 bpm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Temp</label>
+                                    <input type="text" name="Temperature" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., 98.6°F">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">RR</label>
+                                    <input type="text" name="Respiratory Rate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., 16 bpm">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700">Weight</label>
+                                    <input type="text" name="Weight" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-1 text-xs" placeholder="e.g., 150 lbs">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-2 mt-2">
+                            <button type="button" id="cancelNewPatient" class="px-3 py-1 border border-gray-300 rounded-md text-gray-700 text-xs hover:bg-gray-100">Cancel</button>
+                            <button type="submit" class="px-3 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+    }
+
+    // Keep track of the last added patient
+    let lastAddedPatient = null;
+
+    // New patient button handler
+    $('#newPatientBtn').on('click', function() {
+        $('body').append(createNewPatientForm());
+
+        // Tab switching for new patient form
+        $('.tab-btn').on('click', function() {
+            $('.tab-btn').removeClass('tab-active');
+            $(this).addClass('tab-active');
+
+            const tab = $(this).data('tab');
+            $('.tab-content').addClass('hidden');
+            $(`#${tab}Tab`).removeClass('hidden');
+        });
+    });
+
+    // Handle form submission
+    $(document).on('submit', '#newPatientForm', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const newPatient = {};
+
+        // Generate a new Patient ID
+        const lastId = allPatients[allPatients.length - 1]["Patient ID"];
+        const newIdNum = parseInt(lastId.split('-')[1]) + 1;
+        newPatient["Patient ID"] = `P-${newIdNum.toString().padStart(8, '0')}`;
+
+        // Collect all form data
+        for (let [key, value] of formData.entries()) {
+            if (key === 'Conditions' && value) {
+                newPatient[key] = value.split('; ').filter(Boolean);
+            } else if (key === 'Allergies' && value) {
+                newPatient[key] = value.split('; ').filter(Boolean);
+            } else if (key === 'Medications' && value) {
+                newPatient[key] = value.split('; ').filter(Boolean);
+            } else {
+                newPatient[key] = value || '';
+            }
+        }
+
+        // Add new patient to allPatients array
+        allPatients.push(newPatient);
+        lastAddedPatient = newPatient;
+
+        // Remove modal and show success message with close button
+        $('#newPatientModal').remove();
+        const successMessage = `
+            <div id="successMessage" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+                <div class="bg-white rounded-xl p-4 relative">
+                    <p class="text-green-600 font-semibold text-sm">Patient record added successfully!</p>
+                    <button id="closeSuccess" class="absolute top-1 right-1 text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+        $('body').append(successMessage);
+
+        // Display new patient's details immediately
+        $('#patientInfo').html(createPatientInfoCard(newPatient));
+        $('#detailedPatientView').removeClass('hidden');
+        $('#tabContent').html(createOverviewTab(newPatient));
+
+        // Add to incoming patients if status is Waiting, Arrived, or Urgent
+        if (['Waiting', 'Arrived', 'Urgent'].includes(newPatient.Status)) {
+            const statusColor = newPatient.Status === 'Waiting' ? 'yellow' :
+                              newPatient.Status === 'Urgent' ? 'red' : 'green';
+            const newIncoming = {
+                name: newPatient.Name,
+                arrival: newPatient["Arrival Time"],
+                reason: newPatient["Reason for Visit"],
+                status: newPatient.Status,
+                statusColor: statusColor
+            };
+            incomingPatients.push(newIncoming);
+            $('#incomingPatients .grid').html(incomingPatients.map(createIncomingPatientCard).join(''));
+        }
+    });
+
+    // Cancel button handler
+    $(document).on('click', '#cancelNewPatient', function() {
+        $('#newPatientModal').remove();
+    });
+
+    // Close success message handler
+    $(document).on('click', '#closeSuccess', function() {
+        $('#successMessage').remove();
+    });
+
+    // Improved search functionality
+    $('#searchInput').on('input', function () {
+        const query = $(this).val().toLowerCase();
+        if (query) {
+            const matches = allPatients.filter(p => p.Name.toLowerCase().includes(query));
+
+            if (matches.length > 0) {
+                const patient = matches[0];
+                $('#patientInfo').html(createPatientInfoCard(patient));
+                $('#detailedPatientView').removeClass('hidden');
+                $('#tabContent').html(createOverviewTab(patient));
+            } else {
+                $('#patientInfo').html(`
+                    <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">No patients found matching your search.</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                $('#detailedPatientView').addClass('hidden');
+            }
+        } else if (lastAddedPatient) {
+            // Show last added patient when search is cleared
+            $('#patientInfo').html(createPatientInfoCard(lastAddedPatient));
+            $('#detailedPatientView').removeClass('hidden');
+            $('#tabContent').html(createOverviewTab(lastAddedPatient));
+        }
+    });
+    // Calendar functionality
+$('#calendarIcon').on('click', function () {
+  $('#calendarModal').show();
+  $('#calendarOverlay').show();
+});
+
+$('#closeCalendar').on('click', function () {
+  $('#calendarModal').hide();
+  $('#calendarOverlay').hide();
+});
+
+$('#calendarOverlay').on('click', function () {
+  $('#calendarModal').hide();
+  $('#calendarOverlay').hide();
+});
+
+$('#calendarInput').on('change', function () {
+  const selectedDate = $(this).val();
+  const matches = allPatients.filter(p => p['Appointment Timing'].startsWith(selectedDate));
+
+  if (matches.length > 0) {
+    $('#appointmentsList').html(matches.map(p => `
+      <div class="border-b py-2">
+        <strong>${p.name}</strong> – ${p['Appointment Timing'].split(' ')[1]} ${p['Appointment Timing'].split(' ')[2]}
+      </div>
+    `).join(''));
+  } else {
+    $('#appointmentsList').html("<span class='text-red-600'>No appointments found for this date.</span>");
+  }
+});
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'92591f3a3ca89ab3',t:'MTc0Mjg1MDI3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f0f4f8;
+      font-family: 'Garamond', serif;
+    }
+    .chatbot-icon {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: #0f172a;
+      color: white;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .chatbot-popup {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      width: 420px;
+      height: 520px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      overflow: hidden;
+      transform: scale(0);
+      transform-origin: bottom right;
+      transition: transform 0.3s ease-in-out;
+      z-index: 999;
+    }
+    .chatbot-popup.open {
+      transform: scale(1);
+    }
+    .chat-header {
+      background: #0f172a;
+      color: white;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .chat-body {
+      height: 320px;
+      overflow-y: auto;
+      padding: 16px;
+      background: #f9fafb;
+    }
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px;
+      background: white;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+    }
+    .chat-input button {
+      margin-left: 10px;
+      padding: 0 16px;
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .suggestions {
+      font-size: 13px;
+      background: #f1f5f9;
+      padding: 12px 16px;
+    }
+    .suggestions span {
+      background: #e0e7ff;
+      color: #1e40af;
+      padding: 6px 10px;
+      border-radius: 20px;
+      margin: 4px;
+      display: inline-block;
+      cursor: pointer;
+    }
+  </style>
+<div class="chatbot-icon" onclick="toggleChat()">🤖</div>
+<div class="chatbot-popup" id="chatbotPopup">
+<div class="chat-header">Dr. Voice Assistant 🤖</div>
+<div class="chat-body" id="chatBody"></div>
+<div class="chat-input">
+<input id="chatInput" placeholder="Ask anything about a patient..." type="text"/>
+<button onclick="handleChat()">Send</button>
+</div>
+<div class="suggestions">
+    Try asking:
+    <span onclick="suggest('Amy Santiago temperature')">Amy Santiago's temperature</span>
+<span onclick="suggest('Tiffany Harper allergies')">Tiffany Harper’s allergies</span>
+<span onclick="suggest('Summarize Paul Brown')">Summarize Paul Brown</span>
+</div>
+</div>
+<script>
+  function toggleChat() {
+    document.getElementById("chatbotPopup").classList.toggle("open");
+  }
+
+  function handleChat() {
+    const input = document.getElementById("chatInput");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const chatBody = document.getElementById("chatBody");
+
+    const userMsg = document.createElement("div");
+    userMsg.style.textAlign = "right";
+    userMsg.style.margin = "8px 0";
+    userMsg.innerText = msg;
+    chatBody.appendChild(userMsg);
+
+    const botMsg = document.createElement("div");
+    botMsg.style.textAlign = "left";
+    botMsg.style.margin = "8px 0";
+    botMsg.innerText = "🧠 Thinking...";
+    chatBody.appendChild(botMsg);
+
+    input.value = "";
+
+    setTimeout(() => {
+      botMsg.innerText = `Simulated reply to: "${msg}"`;
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }, 1000);
+  }
+
+  function suggest(text) {
+    document.getElementById("chatInput").value = text;
+  }
+</script><style>
+  .chatbot-icon {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #0f172a;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  .chatbot-popup {
+    position: fixed;
+    bottom: 100px;
+    right: 24px;
+    z-index: 999;
+    transform: scale(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-in-out;
+  }
+  .chatbot-popup.open {
+    transform: scale(1);
+  }
+</style>
+<div class="chatbot-icon" onclick="toggleChat()">🤖</div>
+<div class="chatbot-popup" id="chatbotPopup">
+<div class="chatbot-wrapper">
+<div class="chat-header">Dr. Voice Assistant 🤖</div>
+<div class="chat-body" id="chatBody"></div>
+<div class="chat-input">
+<input id="chatInput" placeholder="Ask anything about a patient..." type="text"/>
+<button onclick="handleChat()">Send</button>
+<button onclick="startVoice()">🎤</button>
+</div>
+<div class="suggestions">
+    Try asking:
+    <span onclick="suggest('What is Amy Santiago’s temperature?')">Amy Santiago's temperature</span>
+<span onclick="suggest('Show me Tiffany Harper’s allergies')">Tiffany Harper’s allergies</span>
+<span onclick="suggest('Summarize Paul Brown')">Summarize Paul Brown</span>
+</div>
+</div>
+</div>
+<script>
+  function toggleChat() {
+    document.getElementById("chatbotPopup").classList.toggle("open");
+  }
+
+const patients = [{"id": "P-20250000", "name": "Amy Santiago", "dob": "1945-11-03", "age": 80, "contact": "414.820.8842x1767", "insurance": "Herrera-Sloan #Ch47131454", "status": "Waiting", "arrival": "08:25 AM", "visit_reason": "Follow-up", "conditions": "Hypertension; High Cholesterol", "allergies": "Peanuts; Penicillin", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "121/83 mmHg", "hr": "68 bpm", "temp": "97.4\u00b0F", "resp": "17 bpm", "weight": "141 lbs"}, {"id": "P-20250001", "name": "Tiffany Harper", "dob": "1960-03-02", "age": 65, "contact": "649-732-2944", "insurance": "Adams PLC #wL30468444", "status": "Arrived", "arrival": "03:53 AM", "visit_reason": "Back pain", "conditions": "High Cholesterol; Type 2 Diabetes", "allergies": "MRI contraindicated", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "128/79 mmHg", "hr": "68 bpm", "temp": "97.2\u00b0F", "resp": "14 bpm", "weight": "205 lbs"}, {"id": "P-20250002", "name": "Paul Brown", "dob": "1974-03-10", "age": 51, "contact": "369-741-7666", "insurance": "Lopez, Murray and Martinez #GE69505789", "status": "Waiting", "arrival": "08:56 AM", "visit_reason": "Follow-up", "conditions": "Hypertension; Asthma; Arthritis", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "113/80 mmHg", "hr": "90 bpm", "temp": "99.3\u00b0F", "resp": "20 bpm", "weight": "131 lbs"}, {"id": "P-20250003", "name": "Danny Le", "dob": "1963-01-15", "age": 62, "contact": "156.343.9855", "insurance": "Brown, Shelton and Anderson #xC40843214", "status": "Arrived", "arrival": "04:28 AM", "visit_reason": "Chest pain", "conditions": "Hypertension; Thyroid Disorder", "allergies": "Peanuts; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "121/76 mmHg", "hr": "96 bpm", "temp": "98.7\u00b0F", "resp": "14 bpm", "weight": "130 lbs"}, {"id": "P-20250004", "name": "Tammy Warner", "dob": "1974-10-13", "age": 51, "contact": "878.149.3999x8854", "insurance": "Davis LLC #wL84546913", "status": "Arrived", "arrival": "12:53 AM", "visit_reason": "High fever", "conditions": "High Cholesterol; Asthma; Type 2 Diabetes", "allergies": "Latex", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "110/74 mmHg", "hr": "100 bpm", "temp": "97.7\u00b0F", "resp": "19 bpm", "weight": "219 lbs"}, {"id": "P-20250005", "name": "Donald Decker", "dob": "1950-09-18", "age": 75, "contact": "556-114-4954x06387", "insurance": "Hester Ltd #EJ12729949", "status": "Waiting", "arrival": "08:16 PM", "visit_reason": "Annual checkup", "conditions": "Thyroid Disorder; Hypertension", "allergies": "Penicillin; Peanuts", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "132/83 mmHg", "hr": "64 bpm", "temp": "98.7\u00b0F", "resp": "13 bpm", "weight": "161 lbs"}, {"id": "P-20250006", "name": "Kimberly Madden", "dob": "1944-03-22", "age": 81, "contact": "854-895-0030x249", "insurance": "Copeland Group #Cp04514898", "status": "Waiting", "arrival": "05:42 AM", "visit_reason": "Chest pain", "conditions": "Type 2 Diabetes", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "133/75 mmHg", "hr": "62 bpm", "temp": "98.2\u00b0F", "resp": "15 bpm", "weight": "201 lbs"}, {"id": "P-20250007", "name": "Jon Moore", "dob": "1986-06-05", "age": 39, "contact": "001-441-287-6590", "insurance": "Ross-Nicholson #qK63322727", "status": "Arrived", "arrival": "08:01 AM", "visit_reason": "Allergy", "conditions": "Type 2 Diabetes", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "124/75 mmHg", "hr": "97 bpm", "temp": "97.2\u00b0F", "resp": "20 bpm", "weight": "187 lbs"}, {"id": "P-20250008", "name": "William Taylor", "dob": "1935-04-04", "age": 90, "contact": "001-094-562-6716x18108", "insurance": "Pratt Group #Fs64839555", "status": "Waiting", "arrival": "09:38 AM", "visit_reason": "Flu symptoms", "conditions": "Type 2 Diabetes; Thyroid Disorder", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "110/76 mmHg", "hr": "96 bpm", "temp": "97.5\u00b0F", "resp": "12 bpm", "weight": "206 lbs"}, {"id": "P-20250009", "name": "Brian Hansen", "dob": "1952-10-15", "age": 73, "contact": "001-667-825-7386x432", "insurance": "Hopkins Inc #TD54068121", "status": "Arrived", "arrival": "11:01 PM", "visit_reason": "Allergy", "conditions": "High Cholesterol; Hypertension", "allergies": "MRI contraindicated; Penicillin", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "121/88 mmHg", "hr": "60 bpm", "temp": "98.3\u00b0F", "resp": "20 bpm", "weight": "208 lbs"}, {"id": "P-20250010", "name": "Eric Fritz", "dob": "1991-08-13", "age": 34, "contact": "048.317.3960", "insurance": "Matthews-Campbell #GS13830278", "status": "Waiting", "arrival": "10:34 AM", "visit_reason": "High fever", "conditions": "Type 2 Diabetes; Asthma", "allergies": "Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "114/90 mmHg", "hr": "70 bpm", "temp": "97.4\u00b0F", "resp": "17 bpm", "weight": "175 lbs"}, {"id": "P-20250011", "name": "Keith Bishop", "dob": "2005-04-16", "age": 20, "contact": "627.394.4173x2430", "insurance": "Wilson, Luna and Hammond #zn77874085", "status": "Waiting", "arrival": "09:00 PM", "visit_reason": "Skin rash", "conditions": "Hypertension; High Cholesterol", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "129/74 mmHg", "hr": "74 bpm", "temp": "97.3\u00b0F", "resp": "18 bpm", "weight": "193 lbs"}, {"id": "P-20250012", "name": "Debra Dunn", "dob": "1955-10-06", "age": 70, "contact": "335.671.1072", "insurance": "Lopez, Walters and Wilson #Qc01728690", "status": "Arrived", "arrival": "07:50 AM", "visit_reason": "Allergy", "conditions": "Hypertension", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "132/83 mmHg", "hr": "79 bpm", "temp": "97.2\u00b0F", "resp": "12 bpm", "weight": "218 lbs"}, {"id": "P-20250013", "name": "Marcus Williams", "dob": "2001-08-06", "age": 24, "contact": "+1-053-294-4740x837", "insurance": "Taylor, Casey and Thomas #MG40727680", "status": "Arrived", "arrival": "01:48 PM", "visit_reason": "Back pain", "conditions": "Asthma; High Cholesterol", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "123/89 mmHg", "hr": "84 bpm", "temp": "97.8\u00b0F", "resp": "19 bpm", "weight": "214 lbs"}, {"id": "P-20250014", "name": "Isaiah Stanton", "dob": "1965-02-04", "age": 60, "contact": "(407)961-2627x29700", "insurance": "King Inc #Vg87192193", "status": "Urgent", "arrival": "09:37 AM", "visit_reason": "Chest pain", "conditions": "Arthritis; Type 2 Diabetes; Thyroid Disorder", "allergies": "Peanuts; Latex", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "112/79 mmHg", "hr": "62 bpm", "temp": "99.2\u00b0F", "resp": "15 bpm", "weight": "127 lbs"}, {"id": "P-20250015", "name": "Alex Carroll", "dob": "2004-05-04", "age": 21, "contact": "798-182-5937x612", "insurance": "Allen-Lopez #lm64727503", "status": "Arrived", "arrival": "06:21 PM", "visit_reason": "Allergy", "conditions": "Arthritis; Type 2 Diabetes; Asthma", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "133/70 mmHg", "hr": "80 bpm", "temp": "98.4\u00b0F", "resp": "14 bpm", "weight": "141 lbs"}, {"id": "P-20250016", "name": "Scott Brown", "dob": "1965-01-10", "age": 60, "contact": "(830)761-9441x4970", "insurance": "Jordan-Kennedy #Na15322955", "status": "Urgent", "arrival": "06:16 AM", "visit_reason": "Annual checkup", "conditions": "Hypertension; Arthritis; Type 2 Diabetes", "allergies": "Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "128/89 mmHg", "hr": "84 bpm", "temp": "98.4\u00b0F", "resp": "13 bpm", "weight": "214 lbs"}, {"id": "P-20250017", "name": "Elizabeth Noble", "dob": "1946-09-05", "age": 79, "contact": "+1-459-400-4630x03146", "insurance": "Williams-Humphrey #VR32920520", "status": "Urgent", "arrival": "02:36 PM", "visit_reason": "Allergy", "conditions": "Arthritis; Hypertension; Thyroid Disorder", "allergies": "Peanuts", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "123/72 mmHg", "hr": "76 bpm", "temp": "98.6\u00b0F", "resp": "15 bpm", "weight": "145 lbs"}, {"id": "P-20250018", "name": "Austin Henry", "dob": "1997-12-02", "age": 28, "contact": "(222)087-6550x0131", "insurance": "Smith, Bell and Willis #ol16823908", "status": "Waiting", "arrival": "05:32 AM", "visit_reason": "Back pain", "conditions": "High Cholesterol", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "118/87 mmHg", "hr": "96 bpm", "temp": "97.8\u00b0F", "resp": "19 bpm", "weight": "191 lbs"}, {"id": "P-20250019", "name": "Jennifer Cuevas", "dob": "1960-08-04", "age": 65, "contact": "871.504.1789", "insurance": "Lawrence, Morton and Fritz #Sf49922606", "status": "Arrived", "arrival": "12:05 PM", "visit_reason": "Skin rash", "conditions": "High Cholesterol", "allergies": "Peanuts; Penicillin", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "124/71 mmHg", "hr": "65 bpm", "temp": "99.5\u00b0F", "resp": "15 bpm", "weight": "137 lbs"}, {"id": "P-20250020", "name": "Darrell Ruiz", "dob": "1944-07-29", "age": 81, "contact": "+1-408-775-3728x1976", "insurance": "Gray, Harris and Robertson #KC23040874", "status": "Waiting", "arrival": "06:02 PM", "visit_reason": "Follow-up", "conditions": "High Cholesterol; Type 2 Diabetes; Asthma", "allergies": "Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "135/85 mmHg", "hr": "70 bpm", "temp": "98.7\u00b0F", "resp": "18 bpm", "weight": "209 lbs"}, {"id": "P-20250021", "name": "Hector Colon", "dob": "1985-05-05", "age": 40, "contact": "001-171-517-5138x7873", "insurance": "Watkins and Sons #qp55004620", "status": "Arrived", "arrival": "04:37 PM", "visit_reason": "Follow-up", "conditions": "Arthritis; Type 2 Diabetes", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "134/70 mmHg", "hr": "95 bpm", "temp": "98.5\u00b0F", "resp": "17 bpm", "weight": "162 lbs"}, {"id": "P-20250022", "name": "Lori Townsend", "dob": "1987-01-24", "age": 38, "contact": "831.334.2589x4309", "insurance": "Warren-Potter #Im80857313", "status": "Waiting", "arrival": "01:56 PM", "visit_reason": "High fever", "conditions": "Asthma; Thyroid Disorder", "allergies": "Shellfish; MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "111/84 mmHg", "hr": "69 bpm", "temp": "98.8\u00b0F", "resp": "13 bpm", "weight": "136 lbs"}, {"id": "P-20250023", "name": "David Freeman", "dob": "1960-10-13", "age": 65, "contact": "597-619-3932x483", "insurance": "Taylor, Hernandez and Quinn #vu55963286", "status": "Urgent", "arrival": "08:45 PM", "visit_reason": "High fever", "conditions": "Asthma; High Cholesterol; Type 2 Diabetes", "allergies": "Penicillin", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "127/71 mmHg", "hr": "84 bpm", "temp": "99.3\u00b0F", "resp": "17 bpm", "weight": "174 lbs"}, {"id": "P-20250024", "name": "Timothy Camacho", "dob": "1968-06-13", "age": 57, "contact": "562.619.9000", "insurance": "Bennett, Durham and Sanchez #HW83642375", "status": "Arrived", "arrival": "11:24 AM", "visit_reason": "High fever", "conditions": "Arthritis", "allergies": "MRI contraindicated; Shellfish", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "138/87 mmHg", "hr": "92 bpm", "temp": "99.5\u00b0F", "resp": "20 bpm", "weight": "125 lbs"}, {"id": "P-20250025", "name": "Jesse Chavez", "dob": "1935-03-28", "age": 90, "contact": "646.798.2664", "insurance": "Barnes Group #UX02566173", "status": "Arrived", "arrival": "10:35 PM", "visit_reason": "Allergy", "conditions": "High Cholesterol; Thyroid Disorder; Arthritis", "allergies": "Penicillin; MRI contraindicated", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "118/88 mmHg", "hr": "78 bpm", "temp": "99.4\u00b0F", "resp": "18 bpm", "weight": "133 lbs"}, {"id": "P-20250026", "name": "Zoe Shaffer", "dob": "1977-05-19", "age": 48, "contact": "(210)735-0718", "insurance": "James Inc #wi74132404", "status": "Urgent", "arrival": "11:19 AM", "visit_reason": "Annual checkup", "conditions": "Arthritis; Asthma; Hypertension", "allergies": "Latex", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "137/86 mmHg", "hr": "97 bpm", "temp": "97.5\u00b0F", "resp": "13 bpm", "weight": "157 lbs"}, {"id": "P-20250027", "name": "Kelly Davis", "dob": "1945-07-29", "age": 80, "contact": "(081)915-3527", "insurance": "Price-Bender #zt52212650", "status": "Waiting", "arrival": "01:46 PM", "visit_reason": "Follow-up", "conditions": "Hypertension; Thyroid Disorder", "allergies": "Latex", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "114/90 mmHg", "hr": "65 bpm", "temp": "98.0\u00b0F", "resp": "20 bpm", "weight": "198 lbs"}, {"id": "P-20250028", "name": "Mark Mcdonald", "dob": "1977-06-27", "age": 48, "contact": "528-108-5036x9681", "insurance": "Johnson, Hall and Blankenship #Jg56408530", "status": "Waiting", "arrival": "04:05 AM", "visit_reason": "High fever", "conditions": "Hypertension; Arthritis; High Cholesterol", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "111/75 mmHg", "hr": "98 bpm", "temp": "97.6\u00b0F", "resp": "20 bpm", "weight": "207 lbs"}, {"id": "P-20250029", "name": "Susan Weber", "dob": "1984-10-15", "age": 41, "contact": "067.412.2180x44156", "insurance": "Edwards-Lewis #Tt03630643", "status": "Urgent", "arrival": "08:59 AM", "visit_reason": "Annual checkup", "conditions": "Type 2 Diabetes; Asthma", "allergies": "MRI contraindicated; Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "115/74 mmHg", "hr": "84 bpm", "temp": "97.8\u00b0F", "resp": "15 bpm", "weight": "218 lbs"}, {"id": "P-20250030", "name": "Matthew Caldwell", "dob": "1979-08-07", "age": 46, "contact": "(052)915-2234x3190", "insurance": "Gilbert-Barajas #BC22041086", "status": "Urgent", "arrival": "10:07 AM", "visit_reason": "Annual checkup", "conditions": "High Cholesterol; Arthritis", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "123/87 mmHg", "hr": "90 bpm", "temp": "99.0\u00b0F", "resp": "15 bpm", "weight": "205 lbs"}, {"id": "P-20250031", "name": "James Pope", "dob": "1957-11-25", "age": 68, "contact": "438.951.3233x466", "insurance": "Hernandez Group #Fl50138871", "status": "Urgent", "arrival": "03:07 AM", "visit_reason": "Follow-up", "conditions": "Type 2 Diabetes", "allergies": "Shellfish; MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "133/84 mmHg", "hr": "76 bpm", "temp": "98.4\u00b0F", "resp": "20 bpm", "weight": "193 lbs"}, {"id": "P-20250032", "name": "Philip Jones", "dob": "1991-12-08", "age": 34, "contact": "+1-116-060-7922x11001", "insurance": "Schultz and Sons #aM82625637", "status": "Urgent", "arrival": "11:44 PM", "visit_reason": "Flu symptoms", "conditions": "High Cholesterol; Hypertension", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "110/89 mmHg", "hr": "73 bpm", "temp": "98.1\u00b0F", "resp": "18 bpm", "weight": "154 lbs"}, {"id": "P-20250033", "name": "Jordan Parks", "dob": "1984-03-28", "age": 41, "contact": "001-122-952-5748x83769", "insurance": "Mata and Sons #vm81223738", "status": "Urgent", "arrival": "06:10 AM", "visit_reason": "Chest pain", "conditions": "Thyroid Disorder; Type 2 Diabetes", "allergies": "Penicillin; Shellfish", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "121/71 mmHg", "hr": "80 bpm", "temp": "97.6\u00b0F", "resp": "12 bpm", "weight": "146 lbs"}, {"id": "P-20250034", "name": "Joshua Yu", "dob": "1971-03-04", "age": 54, "contact": "900-261-1157x616", "insurance": "Farmer PLC #ox96874660", "status": "Waiting", "arrival": "12:06 AM", "visit_reason": "Flu symptoms", "conditions": "Asthma; Hypertension; Arthritis", "allergies": "Latex; MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "130/87 mmHg", "hr": "90 bpm", "temp": "99.4\u00b0F", "resp": "17 bpm", "weight": "189 lbs"}, {"id": "P-20250035", "name": "Caleb Rogers", "dob": "1935-05-29", "age": 90, "contact": "584-063-6895x67501", "insurance": "Bryan-Wells #AG96261162", "status": "Arrived", "arrival": "02:34 PM", "visit_reason": "Chest pain", "conditions": "Thyroid Disorder", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "134/85 mmHg", "hr": "73 bpm", "temp": "97.5\u00b0F", "resp": "14 bpm", "weight": "209 lbs"}, {"id": "P-20250036", "name": "Charles Nunez", "dob": "1955-04-19", "age": 70, "contact": "625.507.9412x926", "insurance": "Larson-Johnson #hW73688722", "status": "Urgent", "arrival": "06:56 PM", "visit_reason": "Allergy", "conditions": "Arthritis; High Cholesterol", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "119/75 mmHg", "hr": "71 bpm", "temp": "97.0\u00b0F", "resp": "12 bpm", "weight": "154 lbs"}, {"id": "P-20250037", "name": "Amanda Anderson", "dob": "1979-05-23", "age": 46, "contact": "+1-126-807-1756x55395", "insurance": "Howard, Jones and Hale #Sw83099774", "status": "Arrived", "arrival": "12:31 PM", "visit_reason": "Skin rash", "conditions": "High Cholesterol; Asthma; Type 2 Diabetes", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "123/79 mmHg", "hr": "97 bpm", "temp": "97.3\u00b0F", "resp": "15 bpm", "weight": "169 lbs"}, {"id": "P-20250038", "name": "Jordan Wallace", "dob": "1939-03-01", "age": 86, "contact": "(986)224-6088", "insurance": "Brown, Hamilton and Mata #Bh10312637", "status": "Waiting", "arrival": "05:00 AM", "visit_reason": "Follow-up", "conditions": "Type 2 Diabetes; Hypertension", "allergies": "Shellfish; Penicillin", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "110/77 mmHg", "hr": "88 bpm", "temp": "99.5\u00b0F", "resp": "16 bpm", "weight": "133 lbs"}, {"id": "P-20250039", "name": "Michael Delacruz", "dob": "1943-01-25", "age": 82, "contact": "+1-410-390-7734x499", "insurance": "Johnson Ltd #nx66529706", "status": "Waiting", "arrival": "03:20 AM", "visit_reason": "Follow-up", "conditions": "Thyroid Disorder; Hypertension", "allergies": "Penicillin", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "115/85 mmHg", "hr": "70 bpm", "temp": "98.1\u00b0F", "resp": "14 bpm", "weight": "121 lbs"}, {"id": "P-20250040", "name": "Kristen Carter", "dob": "1997-11-23", "age": 28, "contact": "(667)869-1558x1935", "insurance": "Evans, Taylor and Morgan #sn46016829", "status": "Waiting", "arrival": "01:15 AM", "visit_reason": "Skin rash", "conditions": "Arthritis; Type 2 Diabetes", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "128/74 mmHg", "hr": "82 bpm", "temp": "99.3\u00b0F", "resp": "17 bpm", "weight": "142 lbs"}, {"id": "P-20250041", "name": "Jessica Snyder", "dob": "1982-12-14", "age": 43, "contact": "383.176.6301x02687", "insurance": "Johnson Group #Wa47451595", "status": "Arrived", "arrival": "05:31 AM", "visit_reason": "Allergy", "conditions": "Arthritis", "allergies": "Shellfish; Peanuts", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "128/70 mmHg", "hr": "83 bpm", "temp": "97.6\u00b0F", "resp": "19 bpm", "weight": "135 lbs"}, {"id": "P-20250042", "name": "Charles Robinson", "dob": "1958-12-13", "age": 67, "contact": "492-845-7941x125", "insurance": "Nguyen-Williams #ah50535841", "status": "Waiting", "arrival": "08:19 AM", "visit_reason": "Skin rash", "conditions": "High Cholesterol", "allergies": "Penicillin; Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "137/82 mmHg", "hr": "66 bpm", "temp": "98.9\u00b0F", "resp": "13 bpm", "weight": "166 lbs"}, {"id": "P-20250043", "name": "Kelly Matthews", "dob": "1988-06-09", "age": 37, "contact": "+1-312-657-1412x43704", "insurance": "Foley, Ball and Jackson #bn41481694", "status": "Waiting", "arrival": "12:59 PM", "visit_reason": "Flu symptoms", "conditions": "High Cholesterol; Hypertension", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "112/83 mmHg", "hr": "87 bpm", "temp": "98.1\u00b0F", "resp": "17 bpm", "weight": "219 lbs"}, {"id": "P-20250044", "name": "Diane Miller", "dob": "1983-11-06", "age": 42, "contact": "001-664-529-1297x68402", "insurance": "Hunter Inc #jl86697746", "status": "Arrived", "arrival": "12:55 AM", "visit_reason": "Allergy", "conditions": "Hypertension", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "126/90 mmHg", "hr": "71 bpm", "temp": "99.0\u00b0F", "resp": "18 bpm", "weight": "154 lbs"}, {"id": "P-20250045", "name": "Elizabeth Chang", "dob": "1971-11-06", "age": 54, "contact": "147.442.8907x99893", "insurance": "Oliver, Gonzalez and Kim #Qm28138564", "status": "Arrived", "arrival": "10:39 AM", "visit_reason": "Annual checkup", "conditions": "Asthma; High Cholesterol; Arthritis", "allergies": "Shellfish", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "128/82 mmHg", "hr": "94 bpm", "temp": "99.5\u00b0F", "resp": "13 bpm", "weight": "127 lbs"}, {"id": "P-20250046", "name": "Robert Johnston", "dob": "1947-08-04", "age": 78, "contact": "001-146-322-8673x85675", "insurance": "Torres-Dawson #JT70837973", "status": "Waiting", "arrival": "02:10 PM", "visit_reason": "Back pain", "conditions": "Hypertension; Type 2 Diabetes", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "119/77 mmHg", "hr": "76 bpm", "temp": "98.6\u00b0F", "resp": "15 bpm", "weight": "160 lbs"}, {"id": "P-20250047", "name": "William White", "dob": "1993-09-25", "age": 32, "contact": "001-853-567-6737x571", "insurance": "Simpson, Hernandez and Brown #ZF41157022", "status": "Waiting", "arrival": "12:19 AM", "visit_reason": "Allergy", "conditions": "High Cholesterol", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "132/76 mmHg", "hr": "60 bpm", "temp": "98.2\u00b0F", "resp": "20 bpm", "weight": "171 lbs"}, {"id": "P-20250048", "name": "Larry Ramirez", "dob": "1979-08-21", "age": 46, "contact": "(802)063-5509", "insurance": "Jones LLC #gX84154987", "status": "Arrived", "arrival": "10:57 PM", "visit_reason": "Skin rash", "conditions": "High Cholesterol; Asthma; Hypertension", "allergies": "Latex", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "116/87 mmHg", "hr": "82 bpm", "temp": "97.8\u00b0F", "resp": "17 bpm", "weight": "181 lbs"}, {"id": "P-20250049", "name": "David Mendoza", "dob": "2003-03-15", "age": 22, "contact": "+1-851-945-5090x71618", "insurance": "James, Dawson and Gomez #MD31193341", "status": "Arrived", "arrival": "06:53 PM", "visit_reason": "Skin rash", "conditions": "Asthma; High Cholesterol; Arthritis", "allergies": "Penicillin; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "121/75 mmHg", "hr": "79 bpm", "temp": "97.1\u00b0F", "resp": "20 bpm", "weight": "131 lbs"}, {"id": "P-20250050", "name": "Steven Garcia", "dob": "1997-02-06", "age": 28, "contact": "133.230.0392x88060", "insurance": "Davis-Barnett #HU75908606", "status": "Waiting", "arrival": "06:59 AM", "visit_reason": "Chest pain", "conditions": "Thyroid Disorder; High Cholesterol", "allergies": "Latex", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "128/85 mmHg", "hr": "77 bpm", "temp": "99.0\u00b0F", "resp": "18 bpm", "weight": "131 lbs"}, {"id": "P-20250051", "name": "Meghan Bennett", "dob": "1990-02-19", "age": 35, "contact": "001-514-660-8040x00711", "insurance": "King-Perez #nt44043751", "status": "Urgent", "arrival": "02:48 PM", "visit_reason": "Skin rash", "conditions": "High Cholesterol; Hypertension; Type 2 Diabetes", "allergies": "Peanuts", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "122/80 mmHg", "hr": "83 bpm", "temp": "97.1\u00b0F", "resp": "15 bpm", "weight": "186 lbs"}, {"id": "P-20250052", "name": "Mark Rojas", "dob": "1990-01-31", "age": 35, "contact": "+1-948-236-4721x062", "insurance": "Smith Group #jY56877432", "status": "Waiting", "arrival": "10:55 PM", "visit_reason": "Flu symptoms", "conditions": "High Cholesterol", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "138/79 mmHg", "hr": "78 bpm", "temp": "99.4\u00b0F", "resp": "15 bpm", "weight": "169 lbs"}, {"id": "P-20250053", "name": "Rodney Clements", "dob": "2003-08-16", "age": 22, "contact": "681-858-1414x42315", "insurance": "West Inc #si55929971", "status": "Urgent", "arrival": "02:44 AM", "visit_reason": "High fever", "conditions": "Hypertension", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "128/88 mmHg", "hr": "89 bpm", "temp": "97.1\u00b0F", "resp": "13 bpm", "weight": "200 lbs"}, {"id": "P-20250054", "name": "Lisa Hernandez", "dob": "2005-05-04", "age": 20, "contact": "678.777.9306", "insurance": "Booth-Ellis #Xf38201119", "status": "Waiting", "arrival": "01:55 AM", "visit_reason": "High fever", "conditions": "High Cholesterol", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "113/78 mmHg", "hr": "81 bpm", "temp": "98.0\u00b0F", "resp": "16 bpm", "weight": "197 lbs"}, {"id": "P-20250055", "name": "James Smith", "dob": "1990-10-26", "age": 35, "contact": "(797)238-0471x23074", "insurance": "Rodriguez-Le #bV37022178", "status": "Waiting", "arrival": "09:14 PM", "visit_reason": "Chest pain", "conditions": "Arthritis; Type 2 Diabetes; High Cholesterol", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "140/80 mmHg", "hr": "71 bpm", "temp": "97.2\u00b0F", "resp": "18 bpm", "weight": "200 lbs"}, {"id": "P-20250056", "name": "Angela Thomas", "dob": "1971-05-21", "age": 54, "contact": "611-749-4688", "insurance": "Rogers and Sons #jG51914423", "status": "Arrived", "arrival": "06:14 PM", "visit_reason": "Back pain", "conditions": "Arthritis; Type 2 Diabetes", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "126/83 mmHg", "hr": "62 bpm", "temp": "98.0\u00b0F", "resp": "18 bpm", "weight": "151 lbs"}, {"id": "P-20250057", "name": "Jason Day", "dob": "1988-06-25", "age": 37, "contact": "262-886-8075x34020", "insurance": "Ramirez, Howard and Ortiz #jT17591477", "status": "Arrived", "arrival": "11:50 AM", "visit_reason": "Skin rash", "conditions": "Thyroid Disorder", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "120/90 mmHg", "hr": "100 bpm", "temp": "97.9\u00b0F", "resp": "12 bpm", "weight": "146 lbs"}, {"id": "P-20250058", "name": "Mark Williamson", "dob": "1992-12-05", "age": 33, "contact": "142.516.7999x46220", "insurance": "Pope, Gray and Ryan #Tu53831023", "status": "Waiting", "arrival": "10:42 AM", "visit_reason": "Chest pain", "conditions": "Type 2 Diabetes", "allergies": "Penicillin; Shellfish", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "130/74 mmHg", "hr": "73 bpm", "temp": "98.6\u00b0F", "resp": "16 bpm", "weight": "122 lbs"}, {"id": "P-20250059", "name": "Rebecca Sullivan", "dob": "1973-05-01", "age": 52, "contact": "309.285.0627x95075", "insurance": "Martin, Rojas and Stafford #Us00752391", "status": "Urgent", "arrival": "09:07 PM", "visit_reason": "High fever", "conditions": "Type 2 Diabetes", "allergies": "Penicillin; Peanuts", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "126/78 mmHg", "hr": "75 bpm", "temp": "97.5\u00b0F", "resp": "17 bpm", "weight": "162 lbs"}, {"id": "P-20250060", "name": "Destiny Wong", "dob": "1990-07-26", "age": 35, "contact": "527-269-4896x50693", "insurance": "Jacobs, May and Costa #TI48741822", "status": "Arrived", "arrival": "07:35 PM", "visit_reason": "Allergy", "conditions": "High Cholesterol", "allergies": "None", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "110/78 mmHg", "hr": "91 bpm", "temp": "99.5\u00b0F", "resp": "12 bpm", "weight": "218 lbs"}, {"id": "P-20250061", "name": "Donna Ramos", "dob": "1940-12-09", "age": 85, "contact": "468-775-0299", "insurance": "Simon-Deleon #Pg00016852", "status": "Urgent", "arrival": "03:55 AM", "visit_reason": "Skin rash", "conditions": "Type 2 Diabetes; Thyroid Disorder; Hypertension", "allergies": "Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "131/76 mmHg", "hr": "62 bpm", "temp": "98.3\u00b0F", "resp": "20 bpm", "weight": "181 lbs"}, {"id": "P-20250062", "name": "Amber Pearson", "dob": "1941-04-24", "age": 84, "contact": "(257)751-1749", "insurance": "Rivera-Rivas #mI75285261", "status": "Waiting", "arrival": "10:08 AM", "visit_reason": "Follow-up", "conditions": "Thyroid Disorder", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "122/77 mmHg", "hr": "61 bpm", "temp": "99.0\u00b0F", "resp": "18 bpm", "weight": "128 lbs"}, {"id": "P-20250063", "name": "Catherine Kent", "dob": "1964-09-11", "age": 61, "contact": "(085)511-5912x19319", "insurance": "Perkins-Turner #gg41736243", "status": "Waiting", "arrival": "12:43 PM", "visit_reason": "Flu symptoms", "conditions": "Hypertension; Arthritis", "allergies": "Latex; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "112/83 mmHg", "hr": "95 bpm", "temp": "99.0\u00b0F", "resp": "17 bpm", "weight": "212 lbs"}, {"id": "P-20250064", "name": "Kristen White", "dob": "1955-10-29", "age": 70, "contact": "(581)812-1218x784", "insurance": "Contreras-Scott #Tu80631491", "status": "Arrived", "arrival": "02:00 AM", "visit_reason": "Flu symptoms", "conditions": "Hypertension; Arthritis; Type 2 Diabetes", "allergies": "Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "138/90 mmHg", "hr": "66 bpm", "temp": "98.0\u00b0F", "resp": "13 bpm", "weight": "193 lbs"}, {"id": "P-20250065", "name": "Kevin Schroeder DDS", "dob": "1987-08-12", "age": 38, "contact": "209.484.2237x6281", "insurance": "Cline and Sons #EC79252998", "status": "Waiting", "arrival": "08:26 AM", "visit_reason": "Chest pain", "conditions": "Hypertension; Thyroid Disorder", "allergies": "Latex", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "137/73 mmHg", "hr": "68 bpm", "temp": "97.5\u00b0F", "resp": "16 bpm", "weight": "194 lbs"}, {"id": "P-20250066", "name": "Brianna Roth", "dob": "1949-05-24", "age": 76, "contact": "(467)762-3742x5058", "insurance": "Mitchell, Brewer and Thomas #MS43592397", "status": "Urgent", "arrival": "11:37 AM", "visit_reason": "Annual checkup", "conditions": "Arthritis; Hypertension", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "133/72 mmHg", "hr": "67 bpm", "temp": "98.9\u00b0F", "resp": "13 bpm", "weight": "180 lbs"}, {"id": "P-20250067", "name": "Jose Welch", "dob": "1987-02-14", "age": 38, "contact": "1786106611", "insurance": "Lester-Bender #Hv90414996", "status": "Arrived", "arrival": "09:34 AM", "visit_reason": "Skin rash", "conditions": "Arthritis", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "112/88 mmHg", "hr": "98 bpm", "temp": "97.3\u00b0F", "resp": "18 bpm", "weight": "162 lbs"}, {"id": "P-20250068", "name": "Joseph Harris", "dob": "1978-04-04", "age": 47, "contact": "+1-856-976-6757x388", "insurance": "Rice, Miller and Meyer #yd71117494", "status": "Urgent", "arrival": "04:29 PM", "visit_reason": "Allergy", "conditions": "Arthritis", "allergies": "Shellfish; MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "119/72 mmHg", "hr": "71 bpm", "temp": "97.6\u00b0F", "resp": "19 bpm", "weight": "198 lbs"}, {"id": "P-20250069", "name": "Angela Scott", "dob": "1936-02-16", "age": 89, "contact": "+1-606-745-7782", "insurance": "Adams, Ross and Kennedy #pn59836123", "status": "Waiting", "arrival": "02:29 PM", "visit_reason": "High fever", "conditions": "Arthritis; Hypertension; Type 2 Diabetes", "allergies": "Peanuts; MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "136/83 mmHg", "hr": "71 bpm", "temp": "98.0\u00b0F", "resp": "15 bpm", "weight": "176 lbs"}, {"id": "P-20250070", "name": "Manuel Nolan", "dob": "1979-10-17", "age": 46, "contact": "265-158-3255x19597", "insurance": "Harris, Yates and Lee #OS77396518", "status": "Arrived", "arrival": "01:22 PM", "visit_reason": "Flu symptoms", "conditions": "High Cholesterol; Asthma", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "118/73 mmHg", "hr": "93 bpm", "temp": "97.0\u00b0F", "resp": "20 bpm", "weight": "122 lbs"}, {"id": "P-20250071", "name": "Amy Graham", "dob": "1971-06-30", "age": 54, "contact": "(898)740-7807x441", "insurance": "Arnold and Sons #GH89187368", "status": "Urgent", "arrival": "04:08 AM", "visit_reason": "High fever", "conditions": "Hypertension; Asthma", "allergies": "MRI contraindicated; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "133/73 mmHg", "hr": "83 bpm", "temp": "99.0\u00b0F", "resp": "17 bpm", "weight": "156 lbs"}, {"id": "P-20250072", "name": "Eugene Gibson", "dob": "1978-06-28", "age": 47, "contact": "545.270.9815x436", "insurance": "Lawson-Harris #Ug62937298", "status": "Arrived", "arrival": "07:41 PM", "visit_reason": "Flu symptoms", "conditions": "High Cholesterol; Asthma", "allergies": "Latex", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "111/75 mmHg", "hr": "65 bpm", "temp": "97.3\u00b0F", "resp": "20 bpm", "weight": "187 lbs"}, {"id": "P-20250073", "name": "Jessica Edwards", "dob": "1962-06-12", "age": 63, "contact": "128-342-7650", "insurance": "Jimenez-Williams #nY44700442", "status": "Arrived", "arrival": "01:44 AM", "visit_reason": "Annual checkup", "conditions": "Arthritis", "allergies": "Latex; Shellfish", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "122/77 mmHg", "hr": "70 bpm", "temp": "98.7\u00b0F", "resp": "18 bpm", "weight": "193 lbs"}, {"id": "P-20250074", "name": "Dawn Smith", "dob": "1977-07-09", "age": 48, "contact": "8976280587", "insurance": "Rodriguez Group #MR10407116", "status": "Urgent", "arrival": "03:49 PM", "visit_reason": "Allergy", "conditions": "Arthritis; Type 2 Diabetes; Asthma", "allergies": "Peanuts; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "123/81 mmHg", "hr": "98 bpm", "temp": "97.9\u00b0F", "resp": "18 bpm", "weight": "160 lbs"}, {"id": "P-20250075", "name": "Katie Gates", "dob": "1964-08-25", "age": 61, "contact": "7900846663", "insurance": "George-Howard #hT83228999", "status": "Waiting", "arrival": "12:52 AM", "visit_reason": "Follow-up", "conditions": "Hypertension", "allergies": "Penicillin; Shellfish", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "140/75 mmHg", "hr": "77 bpm", "temp": "97.9\u00b0F", "resp": "12 bpm", "weight": "149 lbs"}, {"id": "P-20250076", "name": "Michael Cantu", "dob": "1968-04-01", "age": 57, "contact": "(885)538-9496", "insurance": "Moyer Ltd #Ow32942262", "status": "Urgent", "arrival": "01:27 PM", "visit_reason": "Chest pain", "conditions": "Hypertension; Arthritis; Thyroid Disorder", "allergies": "Penicillin", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "134/78 mmHg", "hr": "61 bpm", "temp": "98.9\u00b0F", "resp": "18 bpm", "weight": "171 lbs"}, {"id": "P-20250077", "name": "Charles Owen", "dob": "1974-09-02", "age": 51, "contact": "319.656.5119", "insurance": "Nelson PLC #RN81178056", "status": "Arrived", "arrival": "02:36 AM", "visit_reason": "High fever", "conditions": "Hypertension", "allergies": "Latex", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "131/85 mmHg", "hr": "79 bpm", "temp": "99.2\u00b0F", "resp": "17 bpm", "weight": "202 lbs"}, {"id": "P-20250078", "name": "Savannah Ramirez", "dob": "1952-10-14", "age": 73, "contact": "001-834-254-4378x5041", "insurance": "Lee-Clark #qF47237364", "status": "Waiting", "arrival": "02:50 AM", "visit_reason": "Skin rash", "conditions": "Thyroid Disorder", "allergies": "Latex; Penicillin", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "124/90 mmHg", "hr": "96 bpm", "temp": "98.6\u00b0F", "resp": "18 bpm", "weight": "178 lbs"}, {"id": "P-20250079", "name": "Annette Herman", "dob": "1946-10-29", "age": 79, "contact": "000.719.4990x5753", "insurance": "Wright Group #kG64466907", "status": "Arrived", "arrival": "06:10 PM", "visit_reason": "High fever", "conditions": "Thyroid Disorder; Type 2 Diabetes; Asthma", "allergies": "Penicillin; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "133/90 mmHg", "hr": "71 bpm", "temp": "98.8\u00b0F", "resp": "13 bpm", "weight": "184 lbs"}, {"id": "P-20250080", "name": "Mr. Brian Edwards", "dob": "1970-06-29", "age": 55, "contact": "001-616-516-5567", "insurance": "Duffy, Price and Lynn #CO48750940", "status": "Waiting", "arrival": "11:31 AM", "visit_reason": "Allergy", "conditions": "Arthritis; Type 2 Diabetes", "allergies": "Peanuts; Penicillin", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "115/81 mmHg", "hr": "81 bpm", "temp": "98.3\u00b0F", "resp": "17 bpm", "weight": "218 lbs"}, {"id": "P-20250081", "name": "Suzanne Chavez", "dob": "1944-05-25", "age": 81, "contact": "+1-917-490-3022", "insurance": "Hale and Sons #DP46516675", "status": "Arrived", "arrival": "09:58 PM", "visit_reason": "Skin rash", "conditions": "Type 2 Diabetes", "allergies": "Penicillin; MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "135/89 mmHg", "hr": "86 bpm", "temp": "98.1\u00b0F", "resp": "19 bpm", "weight": "137 lbs"}, {"id": "P-20250082", "name": "Ashley Pearson", "dob": "1964-10-25", "age": 61, "contact": "667.650.3108x85810", "insurance": "Rodriguez Ltd #PS75320693", "status": "Arrived", "arrival": "05:06 AM", "visit_reason": "High fever", "conditions": "High Cholesterol; Hypertension; Asthma", "allergies": "MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "115/86 mmHg", "hr": "91 bpm", "temp": "98.7\u00b0F", "resp": "19 bpm", "weight": "214 lbs"}, {"id": "P-20250083", "name": "Mindy Camacho", "dob": "1985-01-02", "age": 40, "contact": "242.644.7099", "insurance": "Brown, Johnson and Ward #ec96738598", "status": "Waiting", "arrival": "01:37 PM", "visit_reason": "Back pain", "conditions": "Asthma; High Cholesterol", "allergies": "Latex", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "136/82 mmHg", "hr": "67 bpm", "temp": "98.6\u00b0F", "resp": "15 bpm", "weight": "217 lbs"}, {"id": "P-20250084", "name": "Phillip Valenzuela", "dob": "1975-05-08", "age": 50, "contact": "001-755-527-7623", "insurance": "Mitchell-Bradley #qk14774611", "status": "Urgent", "arrival": "06:38 AM", "visit_reason": "Follow-up", "conditions": "Hypertension; Type 2 Diabetes", "allergies": "Shellfish; Peanuts", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "112/90 mmHg", "hr": "84 bpm", "temp": "97.5\u00b0F", "resp": "17 bpm", "weight": "162 lbs"}, {"id": "P-20250085", "name": "Chad Cabrera", "dob": "1976-11-17", "age": 49, "contact": "+1-554-955-5702x63198", "insurance": "Sanchez PLC #jp10034199", "status": "Waiting", "arrival": "11:22 AM", "visit_reason": "Allergy", "conditions": "Type 2 Diabetes; Asthma; Thyroid Disorder", "allergies": "Peanuts; Penicillin", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "114/85 mmHg", "hr": "69 bpm", "temp": "99.0\u00b0F", "resp": "17 bpm", "weight": "198 lbs"}, {"id": "P-20250086", "name": "Aaron Martinez", "dob": "1942-06-14", "age": 83, "contact": "210.117.3234", "insurance": "Mack, Guerrero and Simmons #uI75851754", "status": "Urgent", "arrival": "03:46 PM", "visit_reason": "Chest pain", "conditions": "Arthritis; Hypertension; High Cholesterol", "allergies": "Shellfish", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "138/74 mmHg", "hr": "86 bpm", "temp": "98.6\u00b0F", "resp": "18 bpm", "weight": "175 lbs"}, {"id": "P-20250087", "name": "Jonathan Rich", "dob": "1982-12-26", "age": 43, "contact": "(269)797-7439", "insurance": "Avery Inc #jS49684241", "status": "Waiting", "arrival": "03:29 AM", "visit_reason": "Follow-up", "conditions": "Thyroid Disorder; Hypertension", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "118/86 mmHg", "hr": "91 bpm", "temp": "98.2\u00b0F", "resp": "17 bpm", "weight": "130 lbs"}, {"id": "P-20250088", "name": "Susan Howell", "dob": "1989-02-28", "age": 36, "contact": "001-096-851-4529x5933", "insurance": "Lopez, Malone and Bell #OM40267504", "status": "Waiting", "arrival": "05:51 AM", "visit_reason": "Flu symptoms", "conditions": "Type 2 Diabetes; Asthma", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "120/86 mmHg", "hr": "79 bpm", "temp": "97.9\u00b0F", "resp": "17 bpm", "weight": "183 lbs"}, {"id": "P-20250089", "name": "Hannah Rios", "dob": "2002-09-13", "age": 23, "contact": "496.357.5681x1211", "insurance": "Barrett Group #bv51601548", "status": "Urgent", "arrival": "04:41 PM", "visit_reason": "Allergy", "conditions": "High Cholesterol; Arthritis; Type 2 Diabetes", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "140/90 mmHg", "hr": "76 bpm", "temp": "99.1\u00b0F", "resp": "13 bpm", "weight": "140 lbs"}, {"id": "P-20250090", "name": "Michael Davis", "dob": "1978-11-01", "age": 47, "contact": "426-927-9009x2153", "insurance": "Vazquez, Jefferson and Foster #RN87517582", "status": "Urgent", "arrival": "01:47 AM", "visit_reason": "Flu symptoms", "conditions": "Thyroid Disorder; High Cholesterol", "allergies": "None", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "127/87 mmHg", "hr": "61 bpm", "temp": "98.8\u00b0F", "resp": "14 bpm", "weight": "199 lbs"}, {"id": "P-20250091", "name": "Jeremiah Weeks", "dob": "2006-09-04", "age": 19, "contact": "001-330-275-5951x71738", "insurance": "Costa, Hawkins and Cooper #ST01165716", "status": "Arrived", "arrival": "04:51 PM", "visit_reason": "Follow-up", "conditions": "Thyroid Disorder; Type 2 Diabetes", "allergies": "MRI contraindicated", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "130/78 mmHg", "hr": "62 bpm", "temp": "97.6\u00b0F", "resp": "15 bpm", "weight": "162 lbs"}, {"id": "P-20250092", "name": "Michael Taylor", "dob": "1987-03-05", "age": 38, "contact": "936.525.2929x41526", "insurance": "Fisher, Small and Lucas #bt79048347", "status": "Urgent", "arrival": "02:51 AM", "visit_reason": "Allergy", "conditions": "Type 2 Diabetes; Arthritis", "allergies": "MRI contraindicated; Latex", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "112/86 mmHg", "hr": "82 bpm", "temp": "97.7\u00b0F", "resp": "14 bpm", "weight": "147 lbs"}, {"id": "P-20250093", "name": "Patricia Grimes", "dob": "1982-01-02", "age": 43, "contact": "+1-051-681-4429x092", "insurance": "Page, Howard and Martin #sg27414029", "status": "Urgent", "arrival": "07:26 PM", "visit_reason": "Annual checkup", "conditions": "Asthma; High Cholesterol; Type 2 Diabetes", "allergies": "Latex; Shellfish", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "116/73 mmHg", "hr": "86 bpm", "temp": "98.2\u00b0F", "resp": "18 bpm", "weight": "165 lbs"}, {"id": "P-20250094", "name": "Jennifer Graham", "dob": "1949-05-27", "age": 76, "contact": "992.818.2943", "insurance": "Weber LLC #Ff52889691", "status": "Arrived", "arrival": "09:39 PM", "visit_reason": "Annual checkup", "conditions": "Arthritis; Thyroid Disorder; Hypertension", "allergies": "Peanuts; Shellfish", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "122/70 mmHg", "hr": "95 bpm", "temp": "97.1\u00b0F", "resp": "19 bpm", "weight": "193 lbs"}, {"id": "P-20250095", "name": "David Good", "dob": "1984-12-13", "age": 41, "contact": "215.126.1612", "insurance": "Hogan-Stephens #Pf82837750", "status": "Urgent", "arrival": "08:08 PM", "visit_reason": "Annual checkup", "conditions": "Type 2 Diabetes", "allergies": "Latex; Peanuts", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active)", "bp": "129/89 mmHg", "hr": "99 bpm", "temp": "98.1\u00b0F", "resp": "18 bpm", "weight": "182 lbs"}, {"id": "P-20250096", "name": "Jim Bradley", "dob": "1976-12-02", "age": 49, "contact": "(161)759-9957", "insurance": "Thompson LLC #BV68910911", "status": "Waiting", "arrival": "07:23 AM", "visit_reason": "Annual checkup", "conditions": "Thyroid Disorder; Asthma; Hypertension", "allergies": "MRI contraindicated", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "138/83 mmHg", "hr": "99 bpm", "temp": "98.2\u00b0F", "resp": "12 bpm", "weight": "129 lbs"}, {"id": "P-20250097", "name": "Allen Mcknight", "dob": "1981-03-29", "age": 44, "contact": "656-835-4147", "insurance": "Vasquez, Hernandez and Reyes #hb06289763", "status": "Urgent", "arrival": "12:14 AM", "visit_reason": "Flu symptoms", "conditions": "Asthma", "allergies": "Peanuts", "medications": "Lisinopril (10mg, Once daily, 2023-01-15, Active); Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active)", "bp": "139/88 mmHg", "hr": "61 bpm", "temp": "97.8\u00b0F", "resp": "15 bpm", "weight": "132 lbs"}, {"id": "P-20250098", "name": "Kathryn Hanson", "dob": "1961-06-22", "age": 64, "contact": "+1-096-503-2822x2419", "insurance": "Cook, Watson and Stewart #dA35436231", "status": "Waiting", "arrival": "01:27 PM", "visit_reason": "Flu symptoms", "conditions": "Arthritis; Thyroid Disorder", "allergies": "Peanuts", "medications": "Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "110/70 mmHg", "hr": "74 bpm", "temp": "98.0\u00b0F", "resp": "15 bpm", "weight": "203 lbs"}, {"id": "P-20250099", "name": "Tonya Smith", "dob": "1956-02-28", "age": 69, "contact": "001-101-461-8283x96298", "insurance": "Anderson Inc #TP92569755", "status": "Arrived", "arrival": "06:02 PM", "visit_reason": "Back pain", "conditions": "Arthritis", "allergies": "None", "medications": "Metformin (500mg, Twice daily, 2023-03-03, Active); Albuterol (90mcg, As needed, 2022-09-10, Active); Lisinopril (10mg, Once daily, 2023-01-15, Active)", "bp": "133/77 mmHg", "hr": "85 bpm", "temp": "97.9\u00b0F", "resp": "20 bpm", "weight": "216 lbs"}];
+
+const synth = window.speechSynthesis;
+const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recog = new recognition();
+recog.lang = "en-US";
+
+function suggest(q) {
+  document.getElementById("chatInput").value = q;
+  handleChat();
+}
+
+function addMessage(msg, sender) {
+  const chatBody = document.getElementById("chatBody");
+  const msgDiv = document.createElement("div");
+  msgDiv.className = 'msg ' + (sender === "user" ? "user-msg" : "bot-msg");
+  msgDiv.innerText = msg;
+  chatBody.appendChild(msgDiv);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "en-US";
+  synth.speak(utter);
+}
+
+function handleChat() {
+  const input = document.getElementById("chatInput");
+  const query = input.value.trim().toLowerCase();
+  if (!query) return;
+  addMessage(query, "user");
+  input.value = "";
+
+  const response = getResponse(query);
+  setTimeout(() => {
+    addMessage(response, "bot");
+    speak(response);
+  }, 300);
+}
+
+function startVoice() {
+  recog.start();
+  recog.onresult = function(e) {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById("chatInput").value = transcript;
+    handleChat();
+  };
+}
+
+function getResponse(q) {
+  for (const p of patients) {
+    const name = p.name.toLowerCase();
+    if (q.includes(name)) {
+      if (q.includes("age")) return p.name + " is " + p.age + " years old.";
+      if (q.includes("contact")) return "Contact for " + p.name + " is " + p.contact + ".";
+      if (q.includes("insurance")) return p.name + "'s insurance is " + p.insurance + ".";
+      if (q.includes("id") || q.includes("patient id")) return p.name + "'s patient ID is " + p.id + ".";
+      if (q.includes("born") || q.includes("date of birth")) return p.name + " was born on " + p.dob + ".";
+      if (q.includes("status")) return p.name + "'s status is " + p.status + ".";
+      if (q.includes("arrival")) return p.name + " arrived at " + p.arrival + ".";
+      if (q.includes("reason")) return "Reason for " + p.name + "'s visit: " + p.visit_reason + ".";
+      if (q.includes("condition")) return p.name + "'s conditions include: " + p.conditions + ".";
+      if (q.includes("allerg")) return p.name + "'s allergies: " + p.allergies + ".";
+      if (q.includes("medication")) return p.name + " is on medications: " + p.medications + ".";
+      if (q.includes("blood") || q.includes("bp")) return p.name + "'s blood pressure is " + p.bp + ".";
+      if (q.includes("heart")) return p.name + "'s heart rate is " + p.hr + ".";
+      if (q.includes("temp")) return p.name + "'s temperature is " + p.temp + ".";
+      if (q.includes("resp")) return p.name + "'s respiratory rate is " + p.resp + ".";
+      if (q.includes("weight")) return p.name + " weighs " + p.weight + ".";
+      if (q.includes("summary") || q.includes("details") || q.includes("everything")) {
+        return 'Summary of ' + p.name + ': Age ' + p.age + ', Status ' + p.status + ', Arrived at ' + p.arrival +
+          '; Conditions: ' + p.conditions + '; Medications: ' + p.medications + '; Allergies: ' + p.allergies +
+          '; BP: ' + p.bp + '; HR: ' + p.hr + '; Temp: ' + p.temp + '; Resp: ' + p.resp + '; Weight: ' + p.weight;
+      }
+    }
+  }
+  return "I'm trained to answer medical or patient-related questions. Please include a valid patient name from the dataset.";
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medical Appointments Calendar</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-2xl mx-auto bg-white shadow rounded-lg p-6">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Appointments by Date</h2>
+    <input type="date" id="calendar" class="p-2 border rounded-md mb-4 w-full"/>
+    <div id="appointments" class="bg-gray-50 p-4 rounded shadow text-gray-700">Select a date to view appointments.</div>
+  </div>
+
+  <script>
+    const patients = [{'name': 'John Doe', 'age': 45, 'condition': 'Asthma', 'appointment_date': '2025-03-30'},
+                      {'name': 'Emily Davis', 'age': 40, 'condition': 'Hypertension', 'appointment_date': '2025-03-25'}];
+
+    const calendar = document.getElementById("calendar");
+    const appointmentsDiv = document.getElementById("appointments");
+
+    calendar.addEventListener("change", () => {
+      const selectedDate = calendar.value;
+      const matches = patients.filter(p => p.appointment_date === selectedDate);
+      if (matches.length) {
+        appointmentsDiv.innerHTML = matches.map(p => `
+          <div class="border-b py-2">
+            <strong>${p.name}</strong> – Age: ${p.age}, Condition: ${p.condition}
+          </div>
+        `).join('');
+      } else {
+        appointmentsDiv.innerHTML = "<span class='text-red-600'>No appointments found for this date.</span>";
+      }
+    });
+  </script>
+</body>
+</html>

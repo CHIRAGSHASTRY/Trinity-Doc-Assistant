@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trinity Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f7f9fc;
+      color: #222;
+      margin: 0;
+    }
+
+    header {
+      background: linear-gradient(to right, #004d7a, #008793);
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav a {
+      color: #e3f2fd;
+      margin-left: 25px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      color: white;
+    }
+
+    .cta {
+      background: #00c9a7;
+      padding: 10px 20px;
+      border-radius: 6px;
+      color: white;
+      margin-left: 30px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 60px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      color: #003c58;
+      margin-bottom: 10px;
+    }
+
+    .subtext {
+      text-align: center;
+      color: #555;
+      margin-bottom: 40px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 30px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    .feature-card i {
+      font-size: 36px;
+      margin-bottom: 10px;
+      color: #00bfa6;
+    }
+
+    .feature-card h3 {
+      margin-bottom: 10px;
+      color: #003c58;
+    }
+
+    .feature-card p {
+      color: #555;
+      font-size: 15px;
+    }
+
+    .cta-box {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .cta-box a {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #00bfa6;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .cta-box a:hover {
+      background: #009e8a;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1><img alt="Medical Logo" src="medapp.png" style="height: 50px;"/></h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="login.html">Login</a>
+      <a href="try-now.html" class="cta">Try Now</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1>Try Trinity Assistant Now</h1>
+    <p class="subtext">Here’s what you can do with our AI-powered assistant:</p>
+
+    <div class="features">
+      <div class="feature-card">
+        <i>📋</i>
+        <h3>View Patient Records</h3>
+        <p>Quickly access complete medical histories, notes, and documents.</p>
+      </div>
+      <div class="feature-card">
+        <i>💊</i>
+        <h3>Check Prescriptions</h3>
+        <p>See current medications, allergies, and dosage instructions.</p>
+      </div>
+      <div class="feature-card">
+        <i>📅</i>
+        <h3>Appointments & Reminders</h3>
+        <p>Manage your clinic's schedule and receive smart reminders.</p>
+      </div>
+      <div class="feature-card">
+        <i>📄</i>
+        <h3>Upload & Review Reports</h3>
+        <p>Upload test results and access diagnostics at a glance.</p>
+      </div>
+      <div class="feature-card">
+        <i>🧠</i>
+        <h3>AI-Powered Insights</h3>
+        <p>Get suggestions, alerts, and summaries powered by AI.</p>
+      </div>
+      <div class="feature-card">
+        <i>🔒</i>
+        <h3>Secure & Compliant</h3>
+        <p>Built with security and patient data privacy in mind (HIPAA-ready).</p>
+      </div>
+    </div>
+
+    <div class="cta-box">
+      <a href="dashboard.html">Continue to Dashboard</a>
+    </div>
+  </div>
+
+</body>
+</html>
